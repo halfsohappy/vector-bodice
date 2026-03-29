@@ -81,8 +81,8 @@ def curve_armhole_lower(P, O, t):
     tangent_P = np.array([0.0, -1.0])
     tangent_O = np.array([-1.0, 0.0])
     chord_len = np.linalg.norm(O - P)
-    P1 = P + 0.65 * chord_len * tangent_P
-    P2 = O - 0.75 * chord_len * tangent_O
+    P1 = P + 0.90 * chord_len * tangent_P
+    P2 = O - 0.90 * chord_len * tangent_O
     return cubic_bezier(P, P1, P2, O, t)
 
 def curve_back_neck(A, AA, DD, t):
@@ -107,8 +107,8 @@ def curve_back_armhole_lower(BB, O, t):
     tangent_BB = np.array([0.0, -1.0])
     tangent_O = np.array([1.0, 0.0])
     chord_len = np.linalg.norm(O - BB)
-    P1 = BB + 0.65 * chord_len * tangent_BB
-    P2 = O - 0.75 * chord_len * tangent_O
+    P1 = BB + 0.90 * chord_len * tangent_BB
+    P2 = O - 0.90 * chord_len * tangent_O
     return cubic_bezier(BB, P1, P2, O, t)
 
 

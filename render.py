@@ -80,14 +80,34 @@ def _offset_outline_outward(segments, distance, centroid):
         
         elif seg[0] == "cubic_curve":
             _, func, p0, p1 = seg
-            ts = np.linspace(0, 1, 20)
+            ts = np.linspace(0, 1, 40)
             pts_model = np.array([func(t) for t in ts])
             
             offset_pts = []
-            for pt in pts_model:
-                outdir = pt - centroid
-                outdir = outdir / np.linalg.norm(outdir) if np.linalg.norm(outdir) > 1e-8 else np.array([1.0, 0.0])
-                offset_pts.append(pt + outdir * distance)
+            for i, pt in enumerate(pts_model):
+                # Calculate local tangent
+                if i == 0:
+                    tangent = pts_model[1] - pts_model[0]
+                elif i == len(pts_model) - 1:
+                    tangent = pts_model[-1] - pts_model[-2]
+                else:
+                    tangent = pts_model[i+1] - pts_model[i-1]
+                
+                tangent_len = np.linalg.norm(tangent)
+                if tangent_len > 1e-8:
+                    tangent = tangent / tangent_len
+                    # Get perpendicular pointing outward
+                    perp = np.array([-tangent[1], tangent[0]])
+                    # Test orientation vs centroid
+                    outward_test = pt + perp
+                    if np.linalg.norm(outward_test - centroid) < np.linalg.norm(pt - centroid):
+                        perp = -perp
+                    offset_pts.append(pt + perp * distance)
+                else:
+                    # fallback to centroid logic
+                    outdir = pt - centroid
+                    outdir = outdir / np.linalg.norm(outdir) if np.linalg.norm(outdir) > 1e-8 else np.array([1.0, 0.0])
+                    offset_pts.append(pt + outdir * distance)
             
             for i in range(len(offset_pts) - 1):
                 offset_segs.append(("line", offset_pts[i], offset_pts[i+1]))
