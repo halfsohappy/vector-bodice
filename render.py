@@ -30,14 +30,14 @@ _BACK_LABEL_OFFSETS = {
 _FRONT_LABEL_OFFSETS = {
     "M":   (-0.45, -0.35),  # CF neck corner (top-right) → left and down
     "D":   (-0.45,  0.38),  # CF waist corner (bottom-right) → left and up
-    "K":   ( 0.00, -1.00),  # front neck: drop 1" below neck/shoulder junction
+    "K":   (-0.57, -0.82),  # front neck: left and strongly down into neck curve (235°)
     "N":   ( 0.45, -0.45),  # shoulder tip → right and down
     "P":   ( 0.40, -0.35),  # lower armhole transition → right and down
     "O":   ( 0.45, -0.15),  # side seam top (left side) → right and slightly down
     "Q":   ( 0.45,  0.38),  # side seam base (bottom-left) → right and up
-    "V":   ( 0.45,  0.00),  # bust dart lower (side seam) → right
+    "V":   ( 0.87, -0.50),  # bust dart lower (side seam) → right and slightly down (330°)
     "T":   (-0.35, -0.45),  # bust dart upper (near CF) → left and down
-    # "UU" is omitted — offset computed dynamically per render (dart geometry varies with size)
+    "UU":  ( 0.64,  0.77),  # bust dart upper base → right and up (50°, tightened per render)
     "VV":  (-0.45,  0.38),  # waist dart left base → LEFT clear of dart notch
     "WW":  ( 0.45,  0.38),  # waist dart right base → RIGHT clear of dart notch
     "W":   (-0.45,  0.00),  # waist dart tip → left toward side seam
@@ -718,8 +718,7 @@ def render_svgs(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
         outline_labels=front_labels,
         interior_labels=shared_interior,
         seam_allowance=seam_allowance,
-        label_offsets={**_INTERIOR_LABEL_OFFSETS, **_FRONT_LABEL_OFFSETS,
-                       "UU": (0.10, (bk.T[1] + bk.O[1]) / 2 - bk.UU[1])},
+        label_offsets={**_INTERIOR_LABEL_OFFSETS, **_FRONT_LABEL_OFFSETS},
     )
 
     return {
@@ -813,8 +812,7 @@ def render(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
         outline_labels=front_labels,
         interior_labels=shared_interior,
         seam_allowance=seam_allowance,
-        label_offsets={**_INTERIOR_LABEL_OFFSETS, **_FRONT_LABEL_OFFSETS,
-                       "UU": (0.10, (bk.T[1] + bk.O[1]) / 2 - bk.UU[1])},
+        label_offsets={**_INTERIOR_LABEL_OFFSETS, **_FRONT_LABEL_OFFSETS},
     )
 
 
