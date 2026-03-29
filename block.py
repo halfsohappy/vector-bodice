@@ -117,12 +117,14 @@ def curve_back_armhole_lower(BB, O, t):
 
 # ── Builder ───────────────────────────────────────────────────────────────────
 
-def build(alpha, beta, gamma, delta, epsilon, zeta, eta, theta):
+def build(alpha, beta, gamma, delta, epsilon, zeta, eta, theta, deepen_bust_dart=False):
     """Compute all derived measurements, points, and outlines for a given set
     of the 8 objective body measurements.  Returns a SimpleNamespace."""
 
     # Derived measurements
     a = k1(beta)
+    if deepen_bust_dart:
+        a += 0.5
     b = k2(beta - alpha)
     c = beta / 2
     d = gamma / 4

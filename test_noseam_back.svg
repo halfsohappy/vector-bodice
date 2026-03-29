@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="1896" height="1752"
+     viewBox="0 0 1896 1752">
+  <rect width="100%" height="100%" fill="white"/>
+  <defs>
+    <clipPath id="bodice-clip">
+      <path d="M 60.00,1585.46 L 60.00,108.00 Q 285.33,108.00 300.00,60.00 L 804.95,214.29 L 803.04,221.10 L 801.03,227.89 L 798.94,234.68 L 796.78,241.45 L 794.56,248.22 L 792.27,254.97 L 789.93,261.72 L 787.55,268.47 L 785.13,275.21 L 782.68,281.94 L 780.21,288.67 L 777.72,295.40 L 775.23,302.13 L 772.74,308.86 L 770.25,315.59 L 767.78,322.32 L 765.33,329.06 L 762.91,335.80 L 760.53,342.54 L 758.19,349.29 L 755.91,356.05 L 753.68,362.81 L 751.52,369.59 L 749.43,376.37 L 747.43,383.17 L 745.51,389.97 L 743.69,396.79 L 741.97,403.63 L 740.36,410.48 L 738.87,417.34 L 737.51,424.22 L 736.28,431.12 L 735.19,438.04 L 734.24,444.98 L 733.46,451.94 L 732.83,458.92 L 732.37,465.92 L 732.09,472.95 L 732.00,480.00 L 732.11,501.10 L 732.43,521.47 L 732.98,541.13 L 733.76,560.08 L 734.78,578.33 L 736.03,595.90 L 737.53,612.79 L 739.28,629.02 L 741.29,644.58 L 743.56,659.50 L 746.10,673.77 L 748.91,687.42 L 752.00,700.44 L 755.37,712.86 L 759.04,724.67 L 762.99,735.89 L 767.25,746.53 L 771.82,756.59 L 776.69,766.08 L 781.89,775.03 L 787.40,783.42 L 793.24,791.29 L 799.42,798.62 L 805.93,805.44 L 812.79,811.75 L 820.00,817.56 L 827.56,822.88 L 835.49,827.72 L 843.78,832.09 L 852.44,836.00 L 861.47,839.46 L 870.89,842.47 L 880.70,845.06 L 890.90,847.22 L 901.50,848.96 L 912.51,850.31 L 923.92,851.25 L 935.75,851.82 L 948.00,852.00 L 804.00,1585.46 L 408.00,1585.46 L 360.00,852.00 L 312.00,1585.46 L 60.00,1585.46 Z"/>
+    </clipPath>
+  </defs>
+  <path d="M 60.00,1585.46 L 60.00,108.00 Q 285.33,108.00 300.00,60.00 L 804.95,214.29 L 803.04,221.10 L 801.03,227.89 L 798.94,234.68 L 796.78,241.45 L 794.56,248.22 L 792.27,254.97 L 789.93,261.72 L 787.55,268.47 L 785.13,275.21 L 782.68,281.94 L 780.21,288.67 L 777.72,295.40 L 775.23,302.13 L 772.74,308.86 L 770.25,315.59 L 767.78,322.32 L 765.33,329.06 L 762.91,335.80 L 760.53,342.54 L 758.19,349.29 L 755.91,356.05 L 753.68,362.81 L 751.52,369.59 L 749.43,376.37 L 747.43,383.17 L 745.51,389.97 L 743.69,396.79 L 741.97,403.63 L 740.36,410.48 L 738.87,417.34 L 737.51,424.22 L 736.28,431.12 L 735.19,438.04 L 734.24,444.98 L 733.46,451.94 L 732.83,458.92 L 732.37,465.92 L 732.09,472.95 L 732.00,480.00 L 732.11,501.10 L 732.43,521.47 L 732.98,541.13 L 733.76,560.08 L 734.78,578.33 L 736.03,595.90 L 737.53,612.79 L 739.28,629.02 L 741.29,644.58 L 743.56,659.50 L 746.10,673.77 L 748.91,687.42 L 752.00,700.44 L 755.37,712.86 L 759.04,724.67 L 762.99,735.89 L 767.25,746.53 L 771.82,756.59 L 776.69,766.08 L 781.89,775.03 L 787.40,783.42 L 793.24,791.29 L 799.42,798.62 L 805.93,805.44 L 812.79,811.75 L 820.00,817.56 L 827.56,822.88 L 835.49,827.72 L 843.78,832.09 L 852.44,836.00 L 861.47,839.46 L 870.89,842.47 L 880.70,845.06 L 890.90,847.22 L 901.50,848.96 L 912.51,850.31 L 923.92,851.25 L 935.75,851.82 L 948.00,852.00 L 804.00,1585.46 L 408.00,1585.46 L 360.00,852.00 L 312.00,1585.46 L 60.00,1585.46 Z" fill="#dce8f5" stroke="none" opacity="0.85"/>
+  <g clip-path="url(#bodice-clip)">
+    <line x1="948.0" y1="108.0" x2="948.0" y2="1692.0"          stroke="#aaa" stroke-width="0.75" stroke-dasharray="4 3"/>
+    <line x1="60.0" y1="480.0" x2="1836.0" y2="480.0"          stroke="#aaa" stroke-width="0.75" stroke-dasharray="4 3"/>
+    <line x1="60.0" y1="852.0" x2="1836.0" y2="852.0"          stroke="#aaa" stroke-width="0.75" stroke-dasharray="4 3"/>
+    <line x1="60.0" y1="1585.5" x2="804.0" y2="1585.5"          stroke="#aaa" stroke-width="0.75" stroke-dasharray="4 3"/>
+  </g>
+  <g>
+    <line x1="312.0" y1="1585.5" x2="408.0" y2="1585.5"          stroke="#bbb" stroke-width="0.75" stroke-dasharray="4 3"/>
+    <line x1="360.0" y1="852.0" x2="360.0" y2="1585.5"          stroke="#bbb" stroke-width="0.75" stroke-dasharray="4 3"/>
+  </g>
+  <path d="M 60.00,1585.46 L 60.00,108.00 M 60.00,108.00 Q 285.33,108.00 300.00,60.00 M 300.00,60.00 L 804.95,214.29 M 804.95,214.29 L 803.04,221.10 L 801.03,227.89 L 798.94,234.68 L 796.78,241.45 L 794.56,248.22 L 792.27,254.97 L 789.93,261.72 L 787.55,268.47 L 785.13,275.21 L 782.68,281.94 L 780.21,288.67 L 777.72,295.40 L 775.23,302.13 L 772.74,308.86 L 770.25,315.59 L 767.78,322.32 L 765.33,329.06 L 762.91,335.80 L 760.53,342.54 L 758.19,349.29 L 755.91,356.05 L 753.68,362.81 L 751.52,369.59 L 749.43,376.37 L 747.43,383.17 L 745.51,389.97 L 743.69,396.79 L 741.97,403.63 L 740.36,410.48 L 738.87,417.34 L 737.51,424.22 L 736.28,431.12 L 735.19,438.04 L 734.24,444.98 L 733.46,451.94 L 732.83,458.92 L 732.37,465.92 L 732.09,472.95 L 732.00,480.00 M 732.00,480.00 L 732.11,501.10 L 732.43,521.47 L 732.98,541.13 L 733.76,560.08 L 734.78,578.33 L 736.03,595.90 L 737.53,612.79 L 739.28,629.02 L 741.29,644.58 L 743.56,659.50 L 746.10,673.77 L 748.91,687.42 L 752.00,700.44 L 755.37,712.86 L 759.04,724.67 L 762.99,735.89 L 767.25,746.53 L 771.82,756.59 L 776.69,766.08 L 781.89,775.03 L 787.40,783.42 L 793.24,791.29 L 799.42,798.62 L 805.93,805.44 L 812.79,811.75 L 820.00,817.56 L 827.56,822.88 L 835.49,827.72 L 843.78,832.09 L 852.44,836.00 L 861.47,839.46 L 870.89,842.47 L 880.70,845.06 L 890.90,847.22 L 901.50,848.96 L 912.51,850.31 L 923.92,851.25 L 935.75,851.82 L 948.00,852.00 M 948.00,852.00 L 804.00,1585.46 M 804.00,1585.46 L 408.00,1585.46 M 312.00,1585.46 L 60.00,1585.46" fill="none" stroke="#2255aa"        stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="M 408.00,1585.46 L 360.00,852.00 M 360.00,852.00 L 312.00,1585.46" fill="none" stroke="#bbb"        stroke-width="1" stroke-linejoin="round"/>
+  <g clip-path="url(#bodice-clip)">
+    <circle cx="60.0" cy="1692.0" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="1836.0" cy="108.0" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="948.0" cy="108.0" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="948.0" cy="1692.0" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="60.0" cy="480.0" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="1836.0" cy="480.0" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="60.0" cy="852.0" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="1836.0" cy="852.0" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="1325.5" cy="150.0" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="948.0" cy="1092.2" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="804.0" cy="1692.0" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="732.0" cy="192.0" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="60.0" cy="108.0" r="2.5" fill="black"/>
+    <circle cx="60.0" cy="1585.5" r="2.5" fill="black"/>
+    <circle cx="300.0" cy="60.0" r="2.5" fill="black"/>
+    <circle cx="805.0" cy="214.3" r="2.5" fill="black"/>
+    <circle cx="732.0" cy="480.0" r="2.5" fill="black"/>
+    <circle cx="948.0" cy="852.0" r="2.5" fill="black"/>
+    <circle cx="804.0" cy="1585.5" r="2.5" fill="black"/>
+    <circle cx="312.0" cy="1585.5" r="2.5" fill="black"/>
+    <circle cx="408.0" cy="1585.5" r="2.5" fill="black"/>
+    <circle cx="360.0" cy="852.0" r="2.5" fill="black"/>
+  </g>
+  <text x="74.1" y="122.1"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">A</text>
+  <text x="74.1" y="1571.3"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">GG</text>
+  <text x="309.4" y="77.7"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">AA</text>
+  <text x="787.3" y="223.7"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">DD</text>
+  <text x="712.0" y="479.7"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">BB</text>
+  <text x="928.1" y="849.8"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">O</text>
+  <text x="791.3" y="1570.0"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">FF</text>
+  <text x="298.3" y="1570.9"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">XX</text>
+  <text x="421.7" y="1570.9"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">YY</text>
+  <text x="360.0" y="832.0"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">ZZ</text>
+</svg>

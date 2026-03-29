@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="1896" height="1752"
+     viewBox="0 0 1896 1752">
+  <rect width="100%" height="100%" fill="white"/>
+  <defs>
+    <clipPath id="bodice-clip">
+      <path d="M 1836.00,348.00 L 1836.00,1692.00 L 1548.00,1692.00 L 1500.00,1092.20 L 1452.00,1692.00 L 1044.00,1692.00 L 948.00,1140.20 L 1452.00,996.20 L 948.00,1044.20 L 948.00,852.00 L 960.25,851.82 L 972.08,851.25 L 983.49,850.31 L 994.50,848.96 L 1005.10,847.22 L 1015.30,845.06 L 1025.11,842.47 L 1034.53,839.46 L 1043.56,836.00 L 1052.22,832.09 L 1060.51,827.72 L 1068.44,822.88 L 1076.00,817.56 L 1083.21,811.75 L 1090.07,805.44 L 1096.58,798.62 L 1102.76,791.29 L 1108.60,783.42 L 1114.11,775.03 L 1119.31,766.08 L 1124.18,756.59 L 1128.75,746.53 L 1133.01,735.89 L 1136.96,724.67 L 1140.63,712.86 L 1144.00,700.44 L 1147.09,687.42 L 1149.90,673.77 L 1152.44,659.50 L 1154.71,644.58 L 1156.72,629.02 L 1158.47,612.79 L 1159.97,595.90 L 1161.22,578.33 L 1162.24,560.08 L 1163.02,541.13 L 1163.57,521.47 L 1163.89,501.10 L 1164.00,480.00 L 1163.92,473.66 L 1163.69,467.34 L 1163.31,461.04 L 1162.78,454.75 L 1162.12,448.49 L 1161.34,442.24 L 1160.42,436.00 L 1159.40,429.78 L 1158.26,423.57 L 1157.01,417.38 L 1155.67,411.20 L 1154.23,405.03 L 1152.71,398.87 L 1151.11,392.72 L 1149.43,386.58 L 1147.69,380.45 L 1145.88,374.33 L 1144.02,368.21 L 1142.11,362.10 L 1140.15,356.00 L 1138.16,349.89 L 1136.14,343.80 L 1134.09,337.70 L 1132.03,331.61 L 1129.95,325.52 L 1127.87,319.44 L 1125.79,313.35 L 1123.71,307.26 L 1121.64,301.17 L 1119.60,295.07 L 1117.57,288.98 L 1115.58,282.88 L 1113.63,276.77 L 1111.72,270.66 L 1109.86,264.54 L 1108.05,258.42 L 1106.31,252.29 L 1104.63,246.15 L 1103.03,240.00 L 1548.00,60.00 Q 1548.00,348.00 1836.00,348.00 Z"/>
+    </clipPath>
+  </defs>
+  <path d="M 1836.00,348.00 L 1836.00,1692.00 L 1548.00,1692.00 L 1500.00,1092.20 L 1452.00,1692.00 L 1044.00,1692.00 L 948.00,1140.20 L 1452.00,996.20 L 948.00,1044.20 L 948.00,852.00 L 960.25,851.82 L 972.08,851.25 L 983.49,850.31 L 994.50,848.96 L 1005.10,847.22 L 1015.30,845.06 L 1025.11,842.47 L 1034.53,839.46 L 1043.56,836.00 L 1052.22,832.09 L 1060.51,827.72 L 1068.44,822.88 L 1076.00,817.56 L 1083.21,811.75 L 1090.07,805.44 L 1096.58,798.62 L 1102.76,791.29 L 1108.60,783.42 L 1114.11,775.03 L 1119.31,766.08 L 1124.18,756.59 L 1128.75,746.53 L 1133.01,735.89 L 1136.96,724.67 L 1140.63,712.86 L 1144.00,700.44 L 1147.09,687.42 L 1149.90,673.77 L 1152.44,659.50 L 1154.71,644.58 L 1156.72,629.02 L 1158.47,612.79 L 1159.97,595.90 L 1161.22,578.33 L 1162.24,560.08 L 1163.02,541.13 L 1163.57,521.47 L 1163.89,501.10 L 1164.00,480.00 L 1163.92,473.66 L 1163.69,467.34 L 1163.31,461.04 L 1162.78,454.75 L 1162.12,448.49 L 1161.34,442.24 L 1160.42,436.00 L 1159.40,429.78 L 1158.26,423.57 L 1157.01,417.38 L 1155.67,411.20 L 1154.23,405.03 L 1152.71,398.87 L 1151.11,392.72 L 1149.43,386.58 L 1147.69,380.45 L 1145.88,374.33 L 1144.02,368.21 L 1142.11,362.10 L 1140.15,356.00 L 1138.16,349.89 L 1136.14,343.80 L 1134.09,337.70 L 1132.03,331.61 L 1129.95,325.52 L 1127.87,319.44 L 1125.79,313.35 L 1123.71,307.26 L 1121.64,301.17 L 1119.60,295.07 L 1117.57,288.98 L 1115.58,282.88 L 1113.63,276.77 L 1111.72,270.66 L 1109.86,264.54 L 1108.05,258.42 L 1106.31,252.29 L 1104.63,246.15 L 1103.03,240.00 L 1548.00,60.00 Q 1548.00,348.00 1836.00,348.00 Z" fill="#fdeede" stroke="none" opacity="0.85"/>
+  <g clip-path="url(#bodice-clip)">
+    <line x1="948.0" y1="108.0" x2="948.0" y2="1692.0"          stroke="#aaa" stroke-width="0.75" stroke-dasharray="4 3"/>
+    <line x1="60.0" y1="480.0" x2="1836.0" y2="480.0"          stroke="#aaa" stroke-width="0.75" stroke-dasharray="4 3"/>
+    <line x1="60.0" y1="852.0" x2="1836.0" y2="852.0"          stroke="#aaa" stroke-width="0.75" stroke-dasharray="4 3"/>
+    <line x1="60.0" y1="1585.5" x2="804.0" y2="1585.5"          stroke="#aaa" stroke-width="0.75" stroke-dasharray="4 3"/>
+  </g>
+  <g>
+    <line x1="948.0" y1="1044.2" x2="948.0" y2="1092.2"          stroke="#bbb" stroke-width="0.75" stroke-dasharray="4 3"/>
+    <line x1="948.0" y1="1092.2" x2="948.0" y2="1140.2"          stroke="#bbb" stroke-width="0.75" stroke-dasharray="4 3"/>
+    <line x1="948.0" y1="1092.2" x2="1452.0" y2="996.2"          stroke="#bbb" stroke-width="0.75" stroke-dasharray="4 3"/>
+    <line x1="1452.0" y1="1692.0" x2="1548.0" y2="1692.0"          stroke="#bbb" stroke-width="0.75" stroke-dasharray="4 3"/>
+    <line x1="1500.0" y1="1092.2" x2="1500.0" y2="1692.0"          stroke="#bbb" stroke-width="0.75" stroke-dasharray="4 3"/>
+  </g>
+  <path d="M 1836.00,348.00 L 1836.00,1692.00 M 1836.00,1692.00 L 1548.00,1692.00 M 1452.00,1692.00 L 1044.00,1692.00 M 1044.00,1692.00 L 948.00,1140.20 M 948.00,1044.20 L 948.00,852.00 M 948.00,852.00 L 960.25,851.82 L 972.08,851.25 L 983.49,850.31 L 994.50,848.96 L 1005.10,847.22 L 1015.30,845.06 L 1025.11,842.47 L 1034.53,839.46 L 1043.56,836.00 L 1052.22,832.09 L 1060.51,827.72 L 1068.44,822.88 L 1076.00,817.56 L 1083.21,811.75 L 1090.07,805.44 L 1096.58,798.62 L 1102.76,791.29 L 1108.60,783.42 L 1114.11,775.03 L 1119.31,766.08 L 1124.18,756.59 L 1128.75,746.53 L 1133.01,735.89 L 1136.96,724.67 L 1140.63,712.86 L 1144.00,700.44 L 1147.09,687.42 L 1149.90,673.77 L 1152.44,659.50 L 1154.71,644.58 L 1156.72,629.02 L 1158.47,612.79 L 1159.97,595.90 L 1161.22,578.33 L 1162.24,560.08 L 1163.02,541.13 L 1163.57,521.47 L 1163.89,501.10 L 1164.00,480.00 M 1164.00,480.00 L 1163.92,473.66 L 1163.69,467.34 L 1163.31,461.04 L 1162.78,454.75 L 1162.12,448.49 L 1161.34,442.24 L 1160.42,436.00 L 1159.40,429.78 L 1158.26,423.57 L 1157.01,417.38 L 1155.67,411.20 L 1154.23,405.03 L 1152.71,398.87 L 1151.11,392.72 L 1149.43,386.58 L 1147.69,380.45 L 1145.88,374.33 L 1144.02,368.21 L 1142.11,362.10 L 1140.15,356.00 L 1138.16,349.89 L 1136.14,343.80 L 1134.09,337.70 L 1132.03,331.61 L 1129.95,325.52 L 1127.87,319.44 L 1125.79,313.35 L 1123.71,307.26 L 1121.64,301.17 L 1119.60,295.07 L 1117.57,288.98 L 1115.58,282.88 L 1113.63,276.77 L 1111.72,270.66 L 1109.86,264.54 L 1108.05,258.42 L 1106.31,252.29 L 1104.63,246.15 L 1103.03,240.00 M 1103.03,240.00 L 1548.00,60.00 M 1548.00,60.00 Q 1548.00,348.00 1836.00,348.00" fill="none" stroke="#aa5522"        stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="M 1548.00,1692.00 L 1500.00,1092.20 M 1500.00,1092.20 L 1452.00,1692.00 M 948.00,1140.20 L 1452.00,996.20 M 1452.00,996.20 L 948.00,1044.20" fill="none" stroke="#bbb"        stroke-width="1" stroke-linejoin="round"/>
+  <g clip-path="url(#bodice-clip)">
+    <circle cx="60.0" cy="1692.0" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="1836.0" cy="108.0" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="948.0" cy="108.0" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="948.0" cy="1692.0" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="60.0" cy="480.0" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="1836.0" cy="480.0" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="60.0" cy="852.0" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="1836.0" cy="852.0" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="1325.5" cy="150.0" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="948.0" cy="1092.2" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="804.0" cy="1692.0" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="732.0" cy="192.0" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="1836.0" cy="1692.0" r="2.5" fill="black"/>
+    <circle cx="1836.0" cy="348.0" r="2.5" fill="black"/>
+    <circle cx="1548.0" cy="60.0" r="2.5" fill="black"/>
+    <circle cx="1103.0" cy="240.0" r="2.5" fill="black"/>
+    <circle cx="1164.0" cy="480.0" r="2.5" fill="black"/>
+    <circle cx="948.0" cy="852.0" r="2.5" fill="black"/>
+    <circle cx="1044.0" cy="1692.0" r="2.5" fill="black"/>
+    <circle cx="1452.0" cy="996.2" r="2.5" fill="black"/>
+    <circle cx="948.0" cy="1140.2" r="2.5" fill="black"/>
+    <circle cx="1500.0" cy="1092.2" r="2.5" fill="black"/>
+    <circle cx="948.0" cy="1044.2" r="2.5" fill="black"/>
+    <circle cx="1452.0" cy="1692.0" r="2.5" fill="black"/>
+    <circle cx="1548.0" cy="1692.0" r="2.5" fill="black"/>
+    <circle cx="1500.0" cy="996.2" r="2.5" fill="black"/>
+  </g>
+  <text x="1821.9" y="1677.9"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">D</text>
+  <text x="1821.9" y="362.1"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">M</text>
+  <text x="1536.8" y="76.6"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">K</text>
+  <text x="1121.0" y="248.8"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">N</text>
+  <text x="1184.0" y="479.7"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">P</text>
+  <text x="947.3" y="832.0"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">O</text>
+  <text x="1056.9" y="1676.7"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">Q</text>
+  <text x="1434.9" y="985.8"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">T</text>
+  <text x="942.8" y="1120.9"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">V</text>
+  <text x="1500.0" y="1072.2"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">W</text>
+  <text x="961.5" y="1029.4"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">UU</text>
+  <text x="1438.4" y="1677.3"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">VV</text>
+  <text x="1561.6" y="1677.3"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">WW</text>
+  <text x="1492.7" y="977.6"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">S</text>
+</svg>

@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>vector bodice — pattern generator</title>
+  <title>automated bodice block generator</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@300;400;500;700&family=Playwrite+DE+Grund:wght@400&display=swap" rel="stylesheet">
   <style>
     /* =============================================
-       vector bodice — pattern generator
+       automated bodice block generator
        Design language: Gooey / Annabel Portfolio
        Light / Dark · Martian Mono · Playwrite DE Grund
        ============================================= */
@@ -281,14 +281,14 @@
     /* Seam allowance presets */
     .sa-presets {
       display: flex;
-      gap: 4px;
+      gap: 6px;
       flex-wrap: wrap;
-      margin-top: 5px;
+      margin-top: 6px;
     }
     .sa-pill {
       font-family: var(--font);
-      font-size: 11px;
-      padding: 3px 9px;
+      font-size: 13px;
+      padding: 7px 18px;
       border: 1px solid var(--border);
       border-radius: 99px;
       background: var(--bg-input);
@@ -457,7 +457,7 @@
       width: 100%;
     }
     .svg-container svg {
-      max-width: 100%;
+      width: 100%;
       height: auto;
       display: block;
       border-radius: var(--radius);
@@ -489,8 +489,8 @@
   <!-- ===== Header ===== -->
   <header class="main-header">
     <div class="header-brand">
-      <span class="brand-name">vector bodice</span>
-      <span class="brand-sub">pattern generator</span>
+      <span class="brand-name">automated bodice block generator</span>
+      <span class="brand-sub">tool by annie lee, derived from Costume Technician’s Handbook, 3rd Ed, Ingham/Covey p. 110–117</span>
     </div>
     <div class="header-right">
       <div class="status-pill">
@@ -526,20 +526,20 @@
             </div>
 
             <div class="form-group">
-              <label for="inp-gamma" title="From base of neck (nape) down the back to the natural waist">Back nape → waist</label>
+              <label for="inp-gamma" title="Distance down the back from base of neck (nape) to natural waist">Back nape to waist</label>
               <input type="number" id="inp-gamma" value="15.5" step="0.25" min="10" max="26">
             </div>
             <div class="form-group">
-              <label for="inp-delta" title="Over the shoulder from base of neck to shoulder tip">Neck → shoulder</label>
+              <label for="inp-delta" title="Over the shoulder from base of neck to shoulder tip">Neck to shoulder</label>
               <input type="number" id="inp-delta" value="5" step="0.25" min="2" max="10">
             </div>
 
             <div class="form-group">
-              <label for="inp-epsilon" title="Straight from shoulder tip to bust point (nipple level)">Shoulder → bust pt</label>
+              <label for="inp-epsilon" title="Straight from shoulder tip down to bust point (nipple level)">Shoulder center to bust point</label>
               <input type="number" id="inp-epsilon" value="9" step="0.25" min="5" max="16">
             </div>
             <div class="form-group">
-              <label for="inp-zeta" title="Half the distance between bust points (nipple to nipple ÷ 2)">½ bust pt span</label>
+              <label for="inp-zeta" title="Full distance between bust points, nipple to nipple">Bust point to bust point</label>
               <input type="number" id="inp-zeta" value="7" step="0.25" min="3" max="14">
             </div>
 
@@ -552,6 +552,11 @@
               <input type="number" id="inp-theta" value="14" step="0.25" min="8" max="24">
             </div>
 
+          </div>
+
+          <div class="cb-row" style="margin-top:10px">
+            <input type="checkbox" id="inp-deepen">
+            <label for="inp-deepen">deepen bust dart (+½&quot;)</label>
           </div>
         </div><!-- /card measurements -->
 
@@ -576,7 +581,7 @@
 
           <div class="cb-row">
             <input type="checkbox" id="inp-fold">
-            <label for="inp-fold">On the fold (mirror front piece)</label>
+            <label for="inp-fold">on the fold (mirror front piece)</label>
           </div>
 
           <div class="btn-row">
@@ -607,10 +612,10 @@
       </div>
 
       <div class="download-bar" id="downloadBar">
-        <button class="btn btn-accent" id="btnDlFront">↓ Front SVG</button>
-        <button class="btn btn-accent" id="btnDlBack">↓ Back SVG</button>
+        <button class="btn btn-accent" id="btnDlFront">↓ Front</button>
+        <button class="btn btn-accent" id="btnDlBack">↓ Back</button>
         <span class="dl-spacer"></span>
-        <button class="btn btn-secondary" id="btnDlBoth">↓ Both</button>
+        <button class="btn btn-secondary" id="btnDlBoth">↓ Combined SVG</button>
       </div>
 
     </div><!-- /panel-right -->
@@ -621,8 +626,7 @@
   <script>
     /* ── Theme ───────────────────────────────────────────────────────────── */
     (function () {
-      const t = localStorage.getItem('vb-theme');
-      if (t === 'dark' || (!t && matchMedia('(prefers-color-scheme:dark)').matches))
+      if (localStorage.getItem('vb-theme') === 'dark')
         document.documentElement.classList.add('dark');
     })();
     document.getElementById('btnTheme').addEventListener('click', () => {
@@ -633,6 +637,7 @@
     /* ── State ───────────────────────────────────────────────────────────── */
     let pyodide   = null;
     let svgData   = { front: null, back: null };
+    let svgDims   = { front: [0, 0], back: [0, 0] };
     let activeTab = 'front';
 
     /* ── Helpers ─────────────────────────────────────────────────────────── */
@@ -749,12 +754,13 @@ import render
           theta:   parseFloat(document.getElementById('inp-theta').value),
           seam:    parseFloat(document.getElementById('inp-seam').value || '0'),
           fold:    document.getElementById('inp-fold').checked,
+          deepen:  document.getElementById('inp-deepen').checked,
         };
 
         // Validate before sending to Python
         const FIELD_LABELS = {
           alpha: 'waist', beta: 'bust', gamma: 'back length', delta: 'neck–shoulder',
-          epsilon: 'shoulder–bust pt', zeta: '½ bust span', eta: 'front width', theta: 'back width',
+          epsilon: 'shoulder–bust point', zeta: 'bust point to bust point', eta: 'front width', theta: 'back width',
         };
         for (const [k, v] of Object.entries(vals)) {
           if (k !== 'fold' && (isNaN(v) || v < 0))
@@ -767,7 +773,8 @@ _r = render.render_svgs(
     ${vals.alpha}, ${vals.beta}, ${vals.gamma}, ${vals.delta},
     ${vals.epsilon}, ${vals.zeta}, ${vals.eta}, ${vals.theta},
     fold=${vals.fold ? 'True' : 'False'},
-    seam_allowance=${vals.seam}
+    seam_allowance=${vals.seam},
+    deepen_bust_dart=${vals.deepen ? 'True' : 'False'}
 )
 json.dumps(_r)
         `);
@@ -775,9 +782,14 @@ json.dumps(_r)
         const result = JSON.parse(pyResult);
         svgData.front = result.front;
         svgData.back  = result.back;
+        svgDims.front = [result.front_w, result.front_h];
+        svgDims.back  = [result.back_w,  result.back_h];
 
-        // Strip the Google Fonts @import from embedded SVG — the page already loads it
-        const clean = s => s.replace(/<style[^>]*>@import[^<]*<\/style>/gi, '');
+        // Strip @import and explicit px dimensions so viewBox drives scaling
+        const clean = s => s
+          .replace(/<style[^>]*>@import[^<]*<\/style>/gi, '')
+          .replace(/(<svg[^>]*?)\s+width="\d+"/, '$1')
+          .replace(/(<svg[^>]*?)\s+height="\d+"/, '$1');
 
         document.getElementById('svgFront').innerHTML = clean(svgData.front);
         document.getElementById('svgBack').innerHTML  = clean(svgData.back);
@@ -811,20 +823,55 @@ json.dumps(_r)
     );
 
     /* ── Downloads ───────────────────────────────────────────────────────── */
-    function dlFilename(piece) {
-      const a = document.getElementById('inp-alpha').value;
-      const b = document.getElementById('inp-beta').value;
-      return `bodice_${a}x${b}_${piece}.svg`;
+    const DL_DPI = 300;
+    function dlFilename(piece, w, h) {
+      return `bodice_block_${piece}_${w}x${h}.svg`;
+    }
+    function extractSVGContent(svgStr, idSuffix) {
+      const inner = svgStr.replace(/<\?xml[^?]*\?>\s*/i, '').match(/<svg[^>]*>([\s\S]*)<\/svg>/i);
+      if (!inner) return '';
+      return inner[1]
+        .replace(/<rect width="100%" height="100%" fill="white"\/>\s*/i, '')
+        .replaceAll('bodice-clip', `bodice-clip-${idSuffix}`);
+    }
+    function buildCombinedSVG() {
+      const GAP_IN   = 0.5;
+      const [fw, fh] = svgDims.front;
+      const [bw, bh] = svgDims.back;
+      const totalWpx = (fw + GAP_IN + bw) * DL_DPI;
+      const totalHpx = Math.max(fh, bh) * DL_DPI;
+      const frontY   = ((Math.max(fh, bh) - fh) / 2) * DL_DPI;
+      const backX    = (fw + GAP_IN) * DL_DPI;
+      const backY    = ((Math.max(fh, bh) - bh) / 2) * DL_DPI;
+      return [
+        `<?xml version="1.0" encoding="UTF-8"?>`,
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${totalWpx}" height="${totalHpx}"`,
+        `     viewBox="0 0 ${totalWpx} ${totalHpx}">`,
+        `  <rect width="100%" height="100%" fill="white"/>`,
+        `  <g transform="translate(0,${frontY})">${extractSVGContent(svgData.front, 'front')}</g>`,
+        `  <g transform="translate(${backX},${backY})">${extractSVGContent(svgData.back, 'back')}</g>`,
+        `</svg>`,
+      ].join('\n');
     }
     document.getElementById('btnDlFront').addEventListener('click', () => {
-      if (svgData.front) downloadSVG(svgData.front, dlFilename('front'));
+      if (svgData.front) {
+        const [w, h] = svgDims.front;
+        downloadSVG(svgData.front, dlFilename('front', w, h));
+      }
     });
     document.getElementById('btnDlBack').addEventListener('click', () => {
-      if (svgData.back)  downloadSVG(svgData.back,  dlFilename('back'));
+      if (svgData.back) {
+        const [w, h] = svgDims.back;
+        downloadSVG(svgData.back, dlFilename('back', w, h));
+      }
     });
     document.getElementById('btnDlBoth').addEventListener('click', () => {
-      if (svgData.front) downloadSVG(svgData.front, dlFilename('front'));
-      if (svgData.back)  setTimeout(() => downloadSVG(svgData.back, dlFilename('back')), 150);
+      if (!svgData.front || !svgData.back) return;
+      const [fw, fh] = svgDims.front;
+      const [bw, bh] = svgDims.back;
+      const totalW = fw + 0.5 + bw;
+      const totalH = Math.max(fh, bh);
+      downloadSVG(buildCombinedSVG(), dlFilename('combined', totalW, totalH));
     });
 
     /* ── Random size fill ─────────────────────────────────────────────────── */
@@ -841,6 +888,7 @@ json.dumps(_r)
       { a:30, b:44, g:16.0,  d:5.25, e:10.5, z:9.0, n:15.5, t:15.0, label:'full bust' },
     ];
 
+    const SA_VALUES = ['0', '0.375', '0.5', '0.625', '0.75', '1', '1.25'];
     let _lastRandIdx = -1;
     function randomFill() {
       let idx;
@@ -859,6 +907,11 @@ json.dumps(_r)
       const tag = document.getElementById('sizeTag');
       tag.textContent = s.label;
       tag.classList.add('visible');
+      // pick a random seam allowance from the preset buttons
+      const saVal = SA_VALUES[Math.floor(Math.random() * SA_VALUES.length)];
+      document.getElementById('inp-seam').value = saVal;
+      document.querySelectorAll('.sa-pill').forEach(p =>
+        p.classList.toggle('active', p.dataset.sa === saVal));
     }
     document.getElementById('btnRandom').addEventListener('click', randomFill);
     // Clear size tag when user manually edits any measurement

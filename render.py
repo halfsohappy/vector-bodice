@@ -2,11 +2,11 @@ import argparse
 import numpy as np
 from block import build
 
-SCALE        = 96   # px per inch
-MARGIN       = 60   # px
-LABEL_OFFSET = 28   # px — inward push toward interior
-FONT_SIZE    = 11   # px
-FONT_FAMILY  = "'Martian Mono', monospace"
+SCALE         = 300          # px per inch (300 DPI)
+MARGIN_INCHES = 0.5          # half-inch whitespace border around bodice
+LABEL_OFFSET  = 87           # px — inward push toward interior
+FONT_SIZE     = 34           # px
+FONT_FAMILY   = "'Martian Mono', monospace"
 
 
 def _seam_runs(segments):
@@ -172,19 +172,29 @@ def _sample_bbox(segments):
 
 
 def _make_converter(all_pts):
-    min_x  = all_pts[:, 0].min()
-    max_y  = all_pts[:, 1].max()
-    width  = (all_pts[:, 0].max() - min_x) * SCALE + 2 * MARGIN
-    height = (max_y - all_pts[:, 1].min()) * SCALE + 2 * MARGIN
+    min_x = all_pts[:, 0].min()
+    max_x = all_pts[:, 0].max()
+    min_y = all_pts[:, 1].min()
+    max_y = all_pts[:, 1].max()
+    content_w = max_x - min_x   # inches
+    content_h = max_y - min_y   # inches
+    # Smallest integer-inch canvas containing content + 0.5" margin on each side
+    w_in = int(np.ceil(content_w + 2 * MARGIN_INCHES))
+    h_in = int(np.ceil(content_h + 2 * MARGIN_INCHES))
+    # Center content within the integer canvas
+    pad_x = (w_in - content_w) / 2   # inches
+    pad_y = (h_in - content_h) / 2   # inches
+    w = w_in * SCALE
+    h = h_in * SCALE
 
     def convert(pts):
         pts = np.atleast_2d(pts)
         return np.column_stack([
-            (pts[:, 0] - min_x) * SCALE + MARGIN,
-            (max_y    - pts[:, 1]) * SCALE + MARGIN,
+            (pts[:, 0] - min_x + pad_x) * SCALE,
+            (max_y - pts[:, 1] + pad_y) * SCALE,
         ])
 
-    return convert, width, height
+    return convert, w, h, w_in, h_in
 
 
 def _outline_to_svg_path(segments, convert):
@@ -338,11 +348,11 @@ def _label_elements(convert, outline, centroid_model, name, pt, filled):
     dx, dy = d[0] * LABEL_OFFSET, -d[1] * LABEL_OFFSET
 
     if filled:
-        dot   = f'    <circle cx="{sx:.1f}" cy="{sy:.1f}" r="2.5" fill="black"/>'
+        dot   = f'    <circle cx="{sx:.1f}" cy="{sy:.1f}" r="8" fill="black"/>'
         color = "#222"
     else:
-        dot   = (f'    <circle cx="{sx:.1f}" cy="{sy:.1f}" r="3"'
-                 f'            fill="white" stroke="#888" stroke-width="1"/>')
+        dot   = (f'    <circle cx="{sx:.1f}" cy="{sy:.1f}" r="9"'
+                 f'            fill="white" stroke="#888" stroke-width="3"/>')
         color = "#888"
 
     text = (f'  <text x="{sx+dx:.1f}" y="{sy+dy:.1f}"'
@@ -363,18 +373,12 @@ def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
                 _offset_open_polyline(run, seam_allowance, centroid_temp)
             )
 
-    # bounding box: outline + seam offset pts + construction/dart/label pts
-    extra = (  [p for seg in construction_lines for p in seg]
-             + [p for seg in dart_lines         for p in seg]
-             + list(outline_labels.values())
-             + list(interior_labels.values()) )
-
-    all_pt_arrays = ([_sample_bbox(outline)]
-                     + seam_offset_runs
-                     + [np.atleast_2d(p) for p in extra])
+    # bounding box: outline + seam offset only.
+    # Construction lines span the full grid rectangle and must not inflate the canvas.
+    all_pt_arrays = ([_sample_bbox(outline)] + seam_offset_runs)
     all_pts = np.vstack(all_pt_arrays)
 
-    convert, w, h  = _make_converter(all_pts)
+    convert, w, h, w_in, h_in = _make_converter(all_pts)
     centroid_model = _sample_outline(outline).mean(axis=0)        # model space
     clip_id        = "bodice-clip"
     path_d   = _outline_to_svg_path(outline, convert)
@@ -401,7 +405,7 @@ def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
         for sp in svg_pts[1:]:
             d_parts.append(f"L {sp[0]:.2f},{sp[1]:.2f}")
         lines.append(f'  <path d="{" ".join(d_parts)}" fill="none" stroke="{stroke}"'
-                     f'        stroke-width="1.5" stroke-dasharray="2 2" opacity="0.5"'
+                     f'        stroke-width="5" stroke-dasharray="6 6" opacity="0.5"'
                      f'        stroke-linecap="round"/>')
     
     lines += [
@@ -415,7 +419,7 @@ def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
         x1, y1 = convert(p1)[0]
         lines.append(
             f'    <line x1="{x0:.1f}" y1="{y0:.1f}" x2="{x1:.1f}" y2="{y1:.1f}"'
-            f'          stroke="#aaa" stroke-width="1.5" stroke-dasharray="4 3"/>'
+            f'          stroke="#aaa" stroke-width="5" stroke-dasharray="12 9"/>'
         )
     lines.append('  </g>')
 
@@ -426,49 +430,56 @@ def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
         x1, y1 = convert(p1)[0]
         lines.append(
             f'    <line x1="{x0:.1f}" y1="{y0:.1f}" x2="{x1:.1f}" y2="{y1:.1f}"'
-            f'          stroke="#bbb" stroke-width="1.5" stroke-dasharray="4 3"/>'
+            f'          stroke="#bbb" stroke-width="5" stroke-dasharray="12 9"/>'
         )
     lines.append('  </g>')
 
     lines += [
         # seam stroke
         f'  <path d="{seam_d}" fill="none" stroke="{stroke}"'
-        f'        stroke-width="1.5" stroke-linejoin="round"/>',
+        f'        stroke-width="5" stroke-linejoin="round"/>',
         # dart stroke in light gray
         f'  <path d="{dart_d}" fill="none" stroke="#bbb"'
-        f'        stroke-width="1" stroke-linejoin="round"/>',
+        f'        stroke-width="3" stroke-linejoin="round"/>',
     ]
 
-    # dots and text both clipped to bodice interior so labels stay inside the outline
+    # Collect dots (clipped) and text (unclipped) separately.
+    # Keeping text outside the clip path prevents concave-corner labels
+    # like O and V from being cut off by the bodice outline.
     all_label_items = (
         [(name, pt, False) for name, pt in interior_labels.items()] +
         [(name, pt, True)  for name, pt in outline_labels.items()]
     )
-
-    # Both dots and text rendered inside the clip group so labels never
-    # appear outside the bodice outline.  The centroid-blend in _inward_dir
-    # ensures text centres are placed well inward and won't be cropped.
-    lines.append(f'  <g clip-path="url(#{clip_id})">')
+    all_dots  = []
+    all_texts = []
     for name, pt, filled in all_label_items:
         dot, text = _label_elements(convert, outline, centroid_model, name, pt, filled)
-        lines += dot
+        all_dots.append(dot)
         if filled:
-            lines += text
+            all_texts.append(text)
+
+    lines.append(f'  <g clip-path="url(#{clip_id})">')
+    for d in all_dots:
+        lines += d
     lines.append('  </g>')
+    # Text rendered after and outside the clip so it is never cut off
+    for t in all_texts:
+        lines += t
     lines.append('</svg>')
 
     svg_string = "\n".join(lines)
     if path is None:
-        return svg_string
+        return svg_string, w_in, h_in
     with open(path, "w") as f:
         f.write(svg_string)
-    print(f"Saved {path}  ({w:.0f} × {h:.0f} px)")
+    print(f"Saved {path}  ({w_in} \u00d7 {h_in} in  /  {w:.0f} \u00d7 {h:.0f} px)")
 
 
 def render_svgs(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
-               fold=False, seam_allowance=0.75):
-    """Return {'front': svg_str, 'back': svg_str}.  Used by the web interface."""
-    bk = build(alpha, beta, gamma, delta, epsilon, zeta, eta, theta)
+               fold=False, seam_allowance=0.75, deepen_bust_dart=False):
+    """Return {'front': svg_str, 'back': svg_str, ...}.  Used by the web interface."""
+    bk = build(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
+               deepen_bust_dart=deepen_bust_dart)
 
     ab_length = np.linalg.norm(bk.B - bk.A)
     center_back_seam_allow = seam_allowance if ab_length >= 1.0 else 0
@@ -506,7 +517,7 @@ def render_svgs(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
             if abs(pt_arr[0] - fold_line_x) > 1e-4:
                 front_labels[name + "'"] = _mirror_point(pt_arr, fold_line_x)
 
-    back_svg = _write_svg(
+    back_svg, back_w, back_h = _write_svg(
         None,
         bk.back_bodice,
         construction_lines=bk.construction_lines,
@@ -521,7 +532,7 @@ def render_svgs(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
         seam_allowance=center_back_seam_allow,
     )
 
-    front_svg = _write_svg(
+    front_svg, front_w, front_h = _write_svg(
         None,
         front_outline,
         construction_lines=bk.construction_lines,
@@ -532,11 +543,15 @@ def render_svgs(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
         seam_allowance=seam_allowance,
     )
 
-    return {'front': front_svg, 'back': back_svg}
+    return {
+        'front': front_svg, 'back': back_svg,
+        'front_w': front_w, 'front_h': front_h,
+        'back_w': back_w, 'back_h': back_h,
+    }
 
 
 def render(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
-           prefix="bodice", fold=False, seam_allowance=0.75):
+           prefix="bodice", fold=False, seam_allowance=0.75, deepen_bust_dart=False):
     """Render bodice blocks to SVG.
     
     Args:
@@ -544,8 +559,10 @@ def render(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
         seam_allowance: Seam allowance in inches (default 0.75). Special handling:
                        if the center-back seam (A-B line) is shorter than 1 inch,
                        seam_allowance is set to 0 for that edge to avoid bunching.
+        deepen_bust_dart: If True, add 0.5" to the bust dart depth from Chart 1.
     """
-    bk = build(alpha, beta, gamma, delta, epsilon, zeta, eta, theta)
+    bk = build(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
+               deepen_bust_dart=deepen_bust_dart)
     
     # Check center-back seam length (A to B)
     ab_length = np.linalg.norm(bk.B - bk.A)

@@ -4,11 +4,14 @@
      viewBox="0 0 1968 1868">
   <rect width="100%" height="100%" fill="white"/>
   <defs>
+    <style>@import url('https://fonts.googleapis.com/css2?family=Martian+Mono:wght@400;700&display=swap');</style>
     <clipPath id="bodice-clip">
       <path d="M 132.00,1702.62 L 132.00,176.31 Q 356.00,176.31 372.00,128.31 L 872.90,295.27 L 871.09,302.06 L 869.20,308.84 L 867.23,315.61 L 865.19,322.37 L 863.08,329.13 L 860.92,335.87 L 858.72,342.61 L 856.47,349.34 L 854.18,356.07 L 851.87,362.80 L 849.53,369.52 L 847.19,376.24 L 844.83,382.96 L 842.48,389.69 L 840.13,396.41 L 837.80,403.13 L 835.48,409.86 L 833.20,416.59 L 830.95,423.32 L 828.74,430.06 L 826.58,436.80 L 824.48,443.56 L 822.44,450.32 L 820.47,457.09 L 818.57,463.87 L 816.76,470.66 L 815.04,477.46 L 813.42,484.27 L 811.90,491.10 L 810.49,497.94 L 809.20,504.80 L 808.04,511.67 L 807.01,518.56 L 806.12,525.47 L 805.38,532.39 L 804.78,539.34 L 804.35,546.31 L 804.09,553.30 L 804.00,560.31 L 804.11,582.08 L 804.43,603.11 L 804.98,623.40 L 805.76,642.96 L 806.78,661.81 L 808.03,679.94 L 809.53,697.38 L 811.28,714.13 L 813.29,730.20 L 815.56,745.59 L 818.10,760.33 L 820.91,774.42 L 824.00,787.86 L 827.37,800.67 L 831.04,812.87 L 834.99,824.45 L 839.25,835.43 L 843.82,845.81 L 848.69,855.62 L 853.89,864.85 L 859.40,873.52 L 865.24,881.63 L 871.42,889.20 L 877.93,896.24 L 884.79,902.75 L 892.00,908.75 L 899.56,914.24 L 907.49,919.24 L 915.78,923.75 L 924.44,927.79 L 933.47,931.36 L 942.89,934.47 L 952.70,937.14 L 962.90,939.37 L 973.50,941.17 L 984.51,942.56 L 995.92,943.53 L 1007.75,944.11 L 1020.00,944.31 L 876.00,1702.62 L 480.00,1702.62 L 432.00,944.31 L 384.00,1702.62 L 132.00,1702.62 Z"/>
     </clipPath>
   </defs>
-  <path d="M 60.00,1774.62 L 60.00,176.31 L 394.77,60.00 L 960.29,248.51 L 938.56,328.19 L 934.26,342.72 L 929.78,356.94 L 925.19,370.88 L 920.53,384.55 L 915.87,397.95 L 911.27,411.10 L 906.77,423.99 L 902.42,436.65 L 898.27,449.07 L 894.37,461.25 L 890.76,473.18 L 887.48,484.88 L 884.55,496.34 L 882.02,507.56 L 879.90,518.53 L 878.23,529.28 L 877.01,539.80 L 876.27,550.12 L 876.01,560.84 L 876.40,600.56 L 877.60,637.74 L 879.63,671.84 L 882.48,702.86 L 886.14,730.81 L 890.57,755.68 L 895.71,777.48 L 901.43,796.21 L 907.59,811.96 L 914.03,824.86 L 1029.90,1111.23 L 820.78,940.80 L 840.59,959.92 L 862.59,976.29 L 886.36,989.67 L 911.44,1000.06 L 937.48,1007.62 L 964.25,1012.65 L 991.71,1015.46 L 1079.26,1018.19 L 935.61,1774.62 L 480.00,1774.62 L 432.00,944.31 L 384.00,1774.62 L 60.00,1774.62 Z" fill="none" stroke="#2255aa"        stroke-width="0.75" stroke-dasharray="2 2" opacity="0.5"/>
+  <path d="M 394.77,60.00 L 895.67,226.97" fill="none" stroke="#2255aa"        stroke-width="0.75" stroke-dasharray="2 2" opacity="0.5"        stroke-linecap="round"/>
+  <path d="M 1090.74,957.74 L 935.61,1774.62 L 480.00,1774.62" fill="none" stroke="#2255aa"        stroke-width="0.75" stroke-dasharray="2 2" opacity="0.5"        stroke-linecap="round"/>
+  <path d="M 384.00,1774.62 L 60.00,1774.62 L 60.00,176.31" fill="none" stroke="#2255aa"        stroke-width="0.75" stroke-dasharray="2 2" opacity="0.5"        stroke-linecap="round"/>
   <path d="M 132.00,1702.62 L 132.00,176.31 Q 356.00,176.31 372.00,128.31 L 872.90,295.27 L 871.09,302.06 L 869.20,308.84 L 867.23,315.61 L 865.19,322.37 L 863.08,329.13 L 860.92,335.87 L 858.72,342.61 L 856.47,349.34 L 854.18,356.07 L 851.87,362.80 L 849.53,369.52 L 847.19,376.24 L 844.83,382.96 L 842.48,389.69 L 840.13,396.41 L 837.80,403.13 L 835.48,409.86 L 833.20,416.59 L 830.95,423.32 L 828.74,430.06 L 826.58,436.80 L 824.48,443.56 L 822.44,450.32 L 820.47,457.09 L 818.57,463.87 L 816.76,470.66 L 815.04,477.46 L 813.42,484.27 L 811.90,491.10 L 810.49,497.94 L 809.20,504.80 L 808.04,511.67 L 807.01,518.56 L 806.12,525.47 L 805.38,532.39 L 804.78,539.34 L 804.35,546.31 L 804.09,553.30 L 804.00,560.31 L 804.11,582.08 L 804.43,603.11 L 804.98,623.40 L 805.76,642.96 L 806.78,661.81 L 808.03,679.94 L 809.53,697.38 L 811.28,714.13 L 813.29,730.20 L 815.56,745.59 L 818.10,760.33 L 820.91,774.42 L 824.00,787.86 L 827.37,800.67 L 831.04,812.87 L 834.99,824.45 L 839.25,835.43 L 843.82,845.81 L 848.69,855.62 L 853.89,864.85 L 859.40,873.52 L 865.24,881.63 L 871.42,889.20 L 877.93,896.24 L 884.79,902.75 L 892.00,908.75 L 899.56,914.24 L 907.49,919.24 L 915.78,923.75 L 924.44,927.79 L 933.47,931.36 L 942.89,934.47 L 952.70,937.14 L 962.90,939.37 L 973.50,941.17 L 984.51,942.56 L 995.92,943.53 L 1007.75,944.11 L 1020.00,944.31 L 876.00,1702.62 L 480.00,1702.62 L 432.00,944.31 L 384.00,1702.62 L 132.00,1702.62 Z" fill="#dce8f5" stroke="none" opacity="0.85"/>
   <g clip-path="url(#bodice-clip)">
     <line x1="1020.0" y1="176.3" x2="1020.0" y2="1808.3"          stroke="#aaa" stroke-width="0.75" stroke-dasharray="4 3"/>
@@ -36,24 +39,24 @@
     <circle cx="876.0" cy="1808.3" r="3"            fill="white" stroke="#888" stroke-width="1"/>
     <circle cx="804.0" cy="272.3" r="3"            fill="white" stroke="#888" stroke-width="1"/>
     <circle cx="132.0" cy="176.3" r="2.5" fill="black"/>
-  <text x="146.1" y="190.4"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">A</text>
+  <text x="154.6" y="192.8"        font-family="'Martian Mono', monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">A</text>
     <circle cx="132.0" cy="1702.6" r="2.5" fill="black"/>
-  <text x="146.1" y="1688.5"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">GG</text>
+  <text x="146.4" y="1678.6"        font-family="'Martian Mono', monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">GG</text>
     <circle cx="372.0" cy="128.3" r="2.5" fill="black"/>
-  <text x="380.9" y="146.2"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">AA</text>
+  <text x="387.6" y="151.6"        font-family="'Martian Mono', monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">AA</text>
     <circle cx="872.9" cy="295.3" r="2.5" fill="black"/>
-  <text x="855.2" y="304.6"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">DD</text>
+  <text x="850.8" y="312.4"        font-family="'Martian Mono', monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">DD</text>
     <circle cx="804.0" cy="560.3" r="2.5" fill="black"/>
-  <text x="784.0" y="560.0"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">BB</text>
+  <text x="777.0" y="552.8"        font-family="'Martian Mono', monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">BB</text>
     <circle cx="1020.0" cy="944.3" r="2.5" fill="black"/>
-  <text x="1000.1" y="942.0"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">O</text>
+  <text x="994.2" y="933.4"        font-family="'Martian Mono', monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">O</text>
     <circle cx="876.0" cy="1702.6" r="2.5" fill="black"/>
-  <text x="863.2" y="1687.2"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">FF</text>
+  <text x="866.2" y="1676.4"        font-family="'Martian Mono', monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">FF</text>
     <circle cx="384.0" cy="1702.6" r="2.5" fill="black"/>
-  <text x="370.3" y="1688.0"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">XX</text>
+  <text x="381.0" y="1674.8"        font-family="'Martian Mono', monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">XX</text>
     <circle cx="480.0" cy="1702.6" r="2.5" fill="black"/>
-  <text x="493.7" y="1688.0"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">YY</text>
+  <text x="489.8" y="1676.4"        font-family="'Martian Mono', monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">YY</text>
     <circle cx="432.0" cy="944.3" r="2.5" fill="black"/>
-  <text x="432.0" y="924.3"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">ZZ</text>
+  <text x="440.4" y="917.6"        font-family="'Martian Mono', monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">ZZ</text>
   </g>
 </svg>
