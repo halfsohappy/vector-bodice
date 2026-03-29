@@ -80,9 +80,11 @@ def curve_armhole_lower(P, O, t):
     """Front lower armhole: P → O with vertical tangent at P → horizontal at O."""
     tangent_P = np.array([0.0, -1.0])
     tangent_O = np.array([-1.0, 0.0])
-    chord_len = np.linalg.norm(O - P)
-    P1 = P + 0.90 * chord_len * tangent_P
-    P2 = O - 0.90 * chord_len * tangent_O
+    width = abs(P[0] - O[0])
+    height = abs(P[1] - O[1])
+    # 0.55 is a perfect circle/ellipse. We use 0.70 to 0.75 for a "boxier" more scooped curve with more area.
+    P1 = P + 0.75 * height * tangent_P
+    P2 = O - 0.75 * width * tangent_O
     return cubic_bezier(P, P1, P2, O, t)
 
 def curve_back_neck(A, AA, DD, t):
@@ -106,9 +108,10 @@ def curve_back_armhole_lower(BB, O, t):
     """Back lower armhole: BB → O with vertical tangent at BB → horizontal at O."""
     tangent_BB = np.array([0.0, -1.0])
     tangent_O = np.array([1.0, 0.0])
-    chord_len = np.linalg.norm(O - BB)
-    P1 = BB + 0.90 * chord_len * tangent_BB
-    P2 = O - 0.90 * chord_len * tangent_O
+    width = abs(O[0] - BB[0])
+    height = abs(BB[1] - O[1])
+    P1 = BB + 0.75 * height * tangent_BB
+    P2 = O - 0.75 * width * tangent_O
     return cubic_bezier(BB, P1, P2, O, t)
 
 

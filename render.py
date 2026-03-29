@@ -84,6 +84,8 @@ def _offset_outline_outward(segments, distance, centroid):
             pts_model = np.array([func(t) for t in ts])
             
             offset_pts = []
+            curve_orientation = None
+            
             for i, pt in enumerate(pts_model):
                 # Calculate local tangent
                 if i == 0:
@@ -98,11 +100,21 @@ def _offset_outline_outward(segments, distance, centroid):
                     tangent = tangent / tangent_len
                     # Get perpendicular pointing outward
                     perp = np.array([-tangent[1], tangent[0]])
-                    # Test orientation vs centroid
-                    outward_test = pt + perp
-                    if np.linalg.norm(outward_test - centroid) < np.linalg.norm(pt - centroid):
-                        perp = -perp
-                    offset_pts.append(pt + perp * distance)
+                    
+                    if curve_orientation is None:
+                        # Determine orientation precisely using the midpoint once
+                        mid_pt = pts_model[len(pts_model)//2]
+                        mid_tangent = pts_model[len(pts_model)//2 + 1] - pts_model[len(pts_model)//2 - 1]
+                        mid_tangent = mid_tangent / np.linalg.norm(mid_tangent)
+                        mid_perp = np.array([-mid_tangent[1], mid_tangent[0]])
+                        
+                        outward_test = mid_pt + mid_perp
+                        if np.linalg.norm(outward_test - centroid) < np.linalg.norm(mid_pt - centroid):
+                            curve_orientation = -1
+                        else:
+                            curve_orientation = 1
+                            
+                    offset_pts.append(pt + perp * curve_orientation * distance)
                 else:
                     # fallback to centroid logic
                     outdir = pt - centroid
