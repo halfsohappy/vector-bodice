@@ -479,7 +479,8 @@ def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
 
 
 def render_svgs(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
-               fold=False, seam_allowance=0.75, deepen_bust_dart=False):
+               fold=False, seam_allowance=0.75, deepen_bust_dart=False,
+               white_fill=False):
     """Return {'front': svg_str, 'back': svg_str, ...}.  Used by the web interface."""
     bk = build(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
                deepen_bust_dart=deepen_bust_dart)
@@ -531,7 +532,7 @@ def render_svgs(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
         bk.back_bodice,
         construction_lines=bk.construction_lines,
         dart_lines=bk.back_dart_lines,
-        fill="#dce8f5", stroke="#2255aa",
+        fill="white" if white_fill else "#dce8f5", stroke="#2255aa",
         outline_labels={
             "A":  bk.A,  "GG": bk.GG, "AA": bk.AA, "DD": bk.DD,
             "BB": bk.BB, "O":  bk.O,  "FF": bk.FF,
@@ -547,7 +548,7 @@ def render_svgs(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
         front_outline,
         construction_lines=bk.construction_lines,
         dart_lines=bk.front_dart_lines,
-        fill="#dac7ff", stroke="#7a6f8a",
+        fill="white" if white_fill else "#dac7ff", stroke="#7a6f8a",
         outline_labels=front_labels,
         interior_labels=shared_interior,
         seam_allowance=seam_allowance,

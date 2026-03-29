@@ -584,6 +584,11 @@
             <label for="inp-fold">on the fold (mirror front piece)</label>
           </div>
 
+          <div class="cb-row">
+            <input type="checkbox" id="inp-white">
+            <label for="inp-white">white fill</label>
+          </div>
+
           <div class="btn-row">
             <button class="btn btn-primary" id="btnGenerate" disabled>Generate →</button>
           </div>
@@ -755,6 +760,7 @@ import render
           seam:    parseFloat(document.getElementById('inp-seam').value || '0'),
           fold:    document.getElementById('inp-fold').checked,
           deepen:  document.getElementById('inp-deepen').checked,
+          white:   document.getElementById('inp-white').checked,
         };
 
         // Validate before sending to Python
@@ -774,7 +780,8 @@ _r = render.render_svgs(
     ${vals.epsilon}, ${vals.zeta}, ${vals.eta}, ${vals.theta},
     fold=${vals.fold ? 'True' : 'False'},
     seam_allowance=${vals.seam},
-    deepen_bust_dart=${vals.deepen ? 'True' : 'False'}
+    deepen_bust_dart=${vals.deepen ? 'True' : 'False'},
+    white_fill=${vals.white ? 'True' : 'False'}
 )
 json.dumps(_r)
         `);
