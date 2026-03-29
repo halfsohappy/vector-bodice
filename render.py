@@ -11,94 +11,107 @@ FONT_SIZE    = 11   # px
 def _offset_outline_outward(segments, distance, centroid):
     """Compute a true parallel-offset outline for seam allowance.
 
-    Samples the entire outline as a single closed polygon polyline then applies
-    per-vertex miter-bisector offsetting so the result is a uniform, connected
-    closed path with no gaps at corners or curve junctions.
+    Per-edge distances:
+      - "line" and "cubic_curve" → full seam distance
+      - "dart" and "quadratic" (neck) → zero (the polygon bridges straight
+        across them so the seam allowance terminates cleanly at dart/neck edges)
+
+    At seam↔no-seam transitions the offset vertex lands on the perpendicular
+    of the adjacent seam edge, so the dashed outline is always a closed,
+    connected, consistently-wide path.
     """
     if distance < 1e-6:
         return segments
 
     centroid = np.asarray(centroid, float)
+    SEAM_TYPES = {"line", "cubic_curve"}
 
-    # ── Sample the entire outline as one closed polygon ──────────────────────
-    pts = []
+    # ── Build flat edge list: (p0, p1, edge_dist) ────────────────────────────
+    edges = []
     for seg in segments:
-        if seg[0] in ("line", "dart"):
-            if not pts:
-                pts.append(np.asarray(seg[1], float))
-            end = np.asarray(seg[2], float)
-            if np.linalg.norm(end - pts[0]) > 1e-6:
-                pts.append(end)
-        elif seg[0] == "quadratic":
+        seg_type = seg[0]
+        d = distance if seg_type in SEAM_TYPES else 0.0
+        if seg_type in ("line", "dart"):
+            edges.append((np.asarray(seg[1], float), np.asarray(seg[2], float), d))
+        elif seg_type == "quadratic":
             _, p0, cp, p3 = seg
-            p0 = np.asarray(p0, float); cp = np.asarray(cp, float); p3 = np.asarray(p3, float)
-            if not pts:
-                pts.append(p0.copy())
-            for i in range(1, 13):
-                t = i / 12.0
-                q = (1-t)**2*p0 + 2*(1-t)*t*cp + t**2*p3
-                if i < 12 or np.linalg.norm(q - pts[0]) > 1e-6:
-                    pts.append(q)
-        elif seg[0] == "cubic_curve":
-            _, func, p0, p1 = seg
-            if not pts:
-                pts.append(np.asarray(func(0), float))
-            for i in range(1, 21):
-                t = i / 20.0
-                q = np.asarray(func(t), float)
-                if i < 20 or np.linalg.norm(q - pts[0]) > 1e-6:
-                    pts.append(q)
+            # neck: no seam — bridge straight from start to end at distance 0
+            edges.append((np.asarray(p0, float), np.asarray(p3, float), 0.0))
+        elif seg_type == "cubic_curve":
+            _, func, _p0, _p1 = seg
+            N = 20
+            pts_c = [np.asarray(func(t / N), float) for t in range(N + 1)]
+            for i in range(N):
+                edges.append((pts_c[i], pts_c[i + 1], d))
 
-    pts = np.array(pts)
-    n = len(pts)
+    if not edges:
+        return segments
+
+    poly_pts   = np.array([e[0] for e in edges])   # poly_pts[i] = start of edge i
+    edge_dists = [e[2] for e in edges]              # edge_dists[i] = dist of edge i
+    n = len(poly_pts)
     if n < 3:
         return segments
 
-    # ── Miter-bisector offset at every vertex ────────────────────────────────
+    # ── Outward-normal helper ─────────────────────────────────────────────────
+    def outward_normal(ev, length, mid):
+        nv = np.array([-ev[1] / length, ev[0] / length])
+        if np.linalg.norm(mid + nv - centroid) < np.linalg.norm(mid - centroid):
+            nv = -nv
+        return nv
+
+    # ── Per-vertex offset ─────────────────────────────────────────────────────
     MITER_LIMIT = 4.0
     offset_pts = []
 
     for i in range(n):
-        p_prev = pts[(i - 1) % n]
-        p_curr = pts[i]
-        p_next = pts[(i + 1) % n]
+        p_prev = poly_pts[(i - 1) % n]
+        p_curr = poly_pts[i]
+        p_next = poly_pts[(i + 1) % n]
+        d_in   = edge_dists[(i - 1) % n]   # dist of incoming edge
+        d_out  = edge_dists[i]             # dist of outgoing edge
+
+        if d_in < 1e-8 and d_out < 1e-8:
+            # Both edges have no seam — vertex stays put
+            offset_pts.append(p_curr)
+            continue
 
         e_in  = p_curr - p_prev
         e_out = p_next - p_curr
         li = np.linalg.norm(e_in)
         lo = np.linalg.norm(e_out)
 
-        if li < 1e-8 or lo < 1e-8:
-            d = p_curr - centroid
-            dn = np.linalg.norm(d)
-            offset_pts.append(p_curr + (d/dn if dn > 1e-8 else np.array([1., 0.])) * distance)
-            continue
+        if d_out < 1e-8:
+            # Seam → no-seam: plant offset on perpendicular of incoming seam edge
+            off = (p_curr + outward_normal(e_in, li, (p_prev + p_curr) / 2) * d_in
+                   if li > 1e-8 else p_curr)
+            offset_pts.append(off)
 
-        # Outward-facing perpendiculars for each adjacent edge
-        ni = np.array([-e_in[1]/li,   e_in[0]/li ])
-        no = np.array([-e_out[1]/lo,  e_out[0]/lo])
+        elif d_in < 1e-8:
+            # No-seam → seam: plant offset on perpendicular of outgoing seam edge
+            off = (p_curr + outward_normal(e_out, lo, (p_curr + p_next) / 2) * d_out
+                   if lo > 1e-8 else p_curr)
+            offset_pts.append(off)
 
-        # Point both normals away from centroid
-        if np.linalg.norm((p_prev+p_curr)/2 + ni - centroid) < np.linalg.norm((p_prev+p_curr)/2 - centroid):
-            ni = -ni
-        if np.linalg.norm((p_curr+p_next)/2 + no - centroid) < np.linalg.norm((p_curr+p_next)/2 - centroid):
-            no = -no
-
-        # Miter bisector
-        bisector = ni + no
-        b_len = np.linalg.norm(bisector)
-        if b_len < 1e-8:
-            offset_pts.append(p_curr + ni * distance)
-            continue
-        bisector /= b_len
-
-        # Scale so the perpendicular distance to each offset edge equals `distance`
-        sin_half = max(np.dot(bisector, ni), 1.0 / MITER_LIMIT)
-        offset_pts.append(p_curr + bisector * (distance / sin_half))
+        else:
+            # Both edges have seam: standard miter bisector
+            if li < 1e-8 or lo < 1e-8:
+                v = p_curr - centroid; vl = np.linalg.norm(v)
+                offset_pts.append(p_curr + (v / vl if vl > 1e-8 else np.array([1., 0.])) * d_in)
+                continue
+            ni = outward_normal(e_in,  li, (p_prev + p_curr) / 2)
+            no = outward_normal(e_out, lo, (p_curr + p_next) / 2)
+            bisector = ni + no
+            b_len = np.linalg.norm(bisector)
+            if b_len < 1e-8:
+                offset_pts.append(p_curr + ni * d_in)
+                continue
+            bisector /= b_len
+            sin_half = max(np.dot(bisector, ni), 1.0 / MITER_LIMIT)
+            offset_pts.append(p_curr + bisector * (d_in / sin_half))
 
     offset_pts = np.array(offset_pts)
-
-    return [("line", offset_pts[i], offset_pts[(i+1) % len(offset_pts)])
+    return [("line", offset_pts[i], offset_pts[(i + 1) % len(offset_pts)])
             for i in range(len(offset_pts))]
 
 
@@ -484,9 +497,8 @@ def render(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
     }
     
     if fold:
-        # Mirror front bodice on the M-D line (fold line at x = c + 0.5, which is M[0] = D[0])
-        front_outline = _fold_front_bodice(bk.front_bodice, bk.M[0])
-        # Adjust labels for folded view: remove center points that don't appear in mirror
+        fold_line_x = bk.M[0]  # = D[0] = center-front x
+        front_outline = _fold_front_bodice(bk.front_bodice, fold_line_x)
         front_labels = {
             "M":  bk.M,  "D":  bk.D,
             "K":  bk.K,  "N":  bk.N,
@@ -495,6 +507,11 @@ def render(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
             "UU": bk.UU, "VV": bk.VV, "WW": bk.WW,
             "S":  bk.S,
         }
+        # Add primed mirrored labels for every point not sitting on the fold line
+        for name, pt in list(front_labels.items()):
+            pt_arr = np.asarray(pt, float)
+            if abs(pt_arr[0] - fold_line_x) > 1e-4:
+                front_labels[name + "'"] = _mirror_point(pt_arr, fold_line_x)
 
     _write_svg(
         f"{prefix}_back.svg",
