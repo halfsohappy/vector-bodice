@@ -67,22 +67,22 @@ def curve_neck(K, M, t):
     P2  = np.array([M[0] - lam,  M[1]      ])
     return cubic_bezier(K, P1, P2, M, t)
 
-def curve_armhole_upper(N, P, t):
+def curve_armhole_upper(K, N, P, t):
     """Front upper armhole: N → P with shoulder continuation → vertical tangent at P."""
-    NP_dir = (P - N) / np.linalg.norm(P - N)
+    shoulder_dir = (N - K) / np.linalg.norm(N - K)
     tangent_P = np.array([0.0, -1.0])
     chord_len = np.linalg.norm(P - N)
-    P1 = N + (1.0/3.0) * chord_len * NP_dir
+    P1 = N + (1.0/3.0) * chord_len * shoulder_dir
     P2 = P - (1.0/3.0) * chord_len * tangent_P
     return cubic_bezier(N, P1, P2, P, t)
 
 def curve_armhole_lower(P, O, t):
     """Front lower armhole: P → O with vertical tangent at P → horizontal at O."""
     tangent_P = np.array([0.0, -1.0])
-    tangent_O = np.array([1.0, 0.0])
+    tangent_O = np.array([-1.0, 0.0])
     chord_len = np.linalg.norm(O - P)
-    P1 = P + (1.0/3.0) * chord_len * tangent_P
-    P2 = O - (1.0/3.0) * chord_len * tangent_O
+    P1 = P + 0.55 * chord_len * tangent_P
+    P2 = O - 0.55 * chord_len * tangent_O
     return cubic_bezier(P, P1, P2, O, t)
 
 def curve_back_neck(A, AA, DD, t):
@@ -93,22 +93,22 @@ def curve_back_neck(A, AA, DD, t):
     P2  = AA - lam * neck_at_AA
     return cubic_bezier(A, P1, P2, AA, t)
 
-def curve_back_armhole_upper(DD, BB, t):
-    """Back upper armhole: DD → BB with shoulder continuation → horizontal tangent at BB."""
-    DD_BB_dir = (BB - DD) / np.linalg.norm(BB - DD)
-    tangent_BB = np.array([-1.0, 0.0])
+def curve_back_armhole_upper(AA, DD, BB, t):
+    """Back upper armhole: DD → BB with shoulder continuation → vertical tangent at BB."""
+    shoulder_dir = (DD - AA) / np.linalg.norm(DD - AA)
+    tangent_BB = np.array([0.0, -1.0])
     chord_len = np.linalg.norm(BB - DD)
-    P1 = DD + (1.0/3.0) * chord_len * DD_BB_dir
+    P1 = DD + (1.0/3.0) * chord_len * shoulder_dir
     P2 = BB - (1.0/3.0) * chord_len * tangent_BB
     return cubic_bezier(DD, P1, P2, BB, t)
 
 def curve_back_armhole_lower(BB, O, t):
-    """Back lower armhole: BB → O with horizontal tangent at BB → vertical at O."""
-    tangent_BB = np.array([-1.0, 0.0])
-    tangent_O = np.array([0.0, -1.0])
+    """Back lower armhole: BB → O with vertical tangent at BB → horizontal at O."""
+    tangent_BB = np.array([0.0, -1.0])
+    tangent_O = np.array([1.0, 0.0])
     chord_len = np.linalg.norm(O - BB)
-    P1 = BB + (1.0/3.0) * chord_len * tangent_BB
-    P2 = O - (1.0/3.0) * chord_len * tangent_O
+    P1 = BB + 0.55 * chord_len * tangent_BB
+    P2 = O - 0.55 * chord_len * tangent_O
     return cubic_bezier(BB, P1, P2, O, t)
 
 
@@ -226,7 +226,7 @@ def build(alpha, beta, gamma, delta, epsilon, zeta, eta, theta):
         ("line",      GG,  A  ),                         # center back (GG→A)
         ("quadratic", A,   _bneck_cp, AA),               # back neck
         ("line",      AA,  DD ),                         # shoulder seam
-        ("cubic_curve", lambda t: curve_back_armhole_upper(DD, BB, t), DD, BB ),  # back armhole, upper (DD→BB)
+        ("cubic_curve", lambda t: curve_back_armhole_upper(AA, DD, BB, t), DD, BB ),  # back armhole, upper (DD→BB)
         ("cubic_curve", lambda t: curve_back_armhole_lower(BB, O, t), BB, O  ),   # back armhole, lower (BB→O)
         ("line",      O,   FF ),                         # side seam
         ("line",      FF,  YY ),                         # bottom, right of dart
@@ -245,9 +245,8 @@ def build(alpha, beta, gamma, delta, epsilon, zeta, eta, theta):
         ("dart",      V,   T  ),                         # bust dart leg
         ("dart",      T,   UU ),                         # bust dart leg
         ("line",      UU,  O  ),                         # side seam, upper
-        ("cubic_curve", lambda t: curve_armhole_lower(P, O, t), P, O  ),   # front armhole, lower (P→O)
-        ("cubic_curve", lambda t: curve_armhole_upper(N, P, t), N, P  ),   # front armhole, upper (N→P)
-        ("line",      P,   N  ),                         # armhole, upper (seam line)
+        ("cubic_curve", lambda t: curve_armhole_lower(P, O, 1-t), O, P  ),   # front armhole, lower (O→P)
+        ("cubic_curve", lambda t: curve_armhole_upper(K, N, P, 1-t), P, N  ),   # front armhole, upper (P→N)
         ("line",      N,   K  ),                         # shoulder seam
         ("quadratic", K,   _neck_cp,  M ),               # front neck (K→M)
     ]
