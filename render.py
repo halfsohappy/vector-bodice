@@ -8,6 +8,133 @@ LABEL_OFFSET = 20   # px — inward push along bisector
 FONT_SIZE    = 11   # px
 
 
+def _offset_outline_outward(segments, distance, centroid):
+    """Create an outward-offset outline for seam allowance.
+    Simplistic approach: offset line endpoints perpendicular to adjacent edges.
+    For curves, sample and offset the samples."""
+    if distance < 1e-6:
+        return segments  # no offset needed
+    
+    centroid = np.asarray(centroid, float)
+    offset_segs = []
+    
+    for idx, seg in enumerate(segments):
+        if seg[0] == "line":
+            _, p0, p1 = seg
+            p0, p1 = np.asarray(p0, float), np.asarray(p1, float)
+            
+            # Get perpendicular direction pointing outward
+            edge_dir = p1 - p0
+            perp = np.array([-edge_dir[1], edge_dir[0]])
+            perp = perp / np.linalg.norm(perp)
+            
+            # Check which direction points outward from centroid
+            edge_mid = (p0 + p1) / 2
+            outward_test = edge_mid + perp
+            if np.linalg.norm(outward_test - centroid) > np.linalg.norm(edge_mid - centroid):
+                # perp points outward
+                offset_p0 = p0 + perp * distance
+                offset_p1 = p1 + perp * distance
+            else:
+                # -perp points outward
+                offset_p0 = p0 - perp * distance
+                offset_p1 = p1 - perp * distance
+            
+            offset_segs.append(("line", offset_p0, offset_p1))
+        
+        elif seg[0] == "dart":
+            _, p0, p1 = seg
+            p0, p1 = np.asarray(p0, float), np.asarray(p1, float)
+            
+            # Darts typically don't get seam allowance, but we'll offset anyway
+            edge_dir = p1 - p0
+            perp = np.array([-edge_dir[1], edge_dir[0]])
+            perp = perp / np.linalg.norm(perp)
+            
+            edge_mid = (p0 + p1) / 2
+            if np.linalg.norm(edge_mid + perp - centroid) > np.linalg.norm(edge_mid - centroid):
+                offset_p0 = p0 + perp * distance
+                offset_p1 = p1 + perp * distance
+            else:
+                offset_p0 = p0 - perp * distance
+                offset_p1 = p1 - perp * distance
+            
+            offset_segs.append(("dart", offset_p0, offset_p1))
+        
+        elif seg[0] == "quadratic":
+            _, p0, cp, p3 = seg
+            # For quadratic, we'll sample and create a polyline
+            ts = np.linspace(0, 1, 15)
+            pts_model = np.array([(1-t)**2 * p0 + 2*(1-t)*t * cp + t**2 * p3 for t in ts])
+            
+            # Offset each point outward (simplified: use centroid direction)
+            offset_pts = []
+            for pt in pts_model:
+                outdir = pt - centroid
+                outdir = outdir / np.linalg.norm(outdir) if np.linalg.norm(outdir) > 1e-8 else np.array([1.0, 0.0])
+                offset_pts.append(pt + outdir * distance)
+            
+            # Convert to line segments
+            for i in range(len(offset_pts) - 1):
+                offset_segs.append(("line", offset_pts[i], offset_pts[i+1]))
+        
+        elif seg[0] == "cubic_curve":
+            _, func, p0, p1 = seg
+            ts = np.linspace(0, 1, 20)
+            pts_model = np.array([func(t) for t in ts])
+            
+            offset_pts = []
+            for pt in pts_model:
+                outdir = pt - centroid
+                outdir = outdir / np.linalg.norm(outdir) if np.linalg.norm(outdir) > 1e-8 else np.array([1.0, 0.0])
+                offset_pts.append(pt + outdir * distance)
+            
+            for i in range(len(offset_pts) - 1):
+                offset_segs.append(("line", offset_pts[i], offset_pts[i+1]))
+    
+    return offset_segs
+
+
+def _mirror_point(pt, fold_line_x):
+    """Mirror a point across a vertical fold line at x = fold_line_x."""
+    pt = np.asarray(pt, float)
+    mirrored = pt.copy()
+    mirrored[0] = 2 * fold_line_x - pt[0]
+    return mirrored
+
+
+def _mirror_segment(seg, fold_line_x):
+    """Mirror a segment across a vertical fold line. Returns mirrored segment."""
+    if seg[0] == "line":
+        _, p0, p1 = seg
+        return ("line", _mirror_point(p1, fold_line_x), _mirror_point(p0, fold_line_x))
+    elif seg[0] == "dart":
+        _, p0, p1 = seg
+        return ("dart", _mirror_point(p1, fold_line_x), _mirror_point(p0, fold_line_x))
+    elif seg[0] == "quadratic":
+        _, p0, cp, p3 = seg
+        return ("quadratic", _mirror_point(p3, fold_line_x), _mirror_point(cp, fold_line_x), _mirror_point(p0, fold_line_x))
+    elif seg[0] == "cubic_curve":
+        _, func, p0, p1 = seg
+        # Create a mirrored function
+        def mirrored_func(t):
+            pt = func(1 - t)  # reverse parameterization
+            return _mirror_point(pt, fold_line_x)
+        return ("cubic_curve", mirrored_func, _mirror_point(p1, fold_line_x), _mirror_point(p0, fold_line_x))
+    else:
+        return seg
+
+
+def _fold_front_bodice(front_bodice, fold_line_x):
+    """Create a full-width front bodice by folding/mirroring.
+    Assumes front_bodice goes from fold line to edge. Returns full-width outline."""
+    # Mirror all segments and reverse their order
+    mirrored = [_mirror_segment(seg, fold_line_x) for seg in reversed(front_bodice)]
+    # Remove the last segment of mirrored (which is the M-D fold line)
+    # and first segment of original (which is also M-D)
+    return mirrored[:-1] + front_bodice[1:]
+
+
 def _sample_bbox(segments):
     """Return points sufficient to compute a bounding box (endpoints + ctrl pt)."""
     pts = []
@@ -166,6 +293,16 @@ def _inward_dir(pt, outline, centroid_model):
                 b /= nb
                 if np.dot(b, c - pt) < 0:
                     b = -b
+                # Ensure minimum inward component: if point is near vertical edge,
+                # boost horizontal component toward centroid
+                centroid_dir = c - pt
+                if np.linalg.norm(centroid_dir) > 1e-8:
+                    centroid_dir = centroid_dir / np.linalg.norm(centroid_dir)
+                    # Blend with centroid direction if inward component is weak
+                    inward_component = np.dot(b, centroid_dir)
+                    if inward_component < 0.3:  # weak inward pointing
+                        b = 0.5 * b + 0.5 * centroid_dir
+                        b = b / np.linalg.norm(b)
                 return b
 
     # fallback: centroid direction
@@ -202,14 +339,26 @@ def _label_elements(convert, outline, centroid_model, name, pt, filled):
 
 
 def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
-               outline_labels, interior_labels):
-    # bounding box: outline control pts + construction lines + dart lines + all label pts
+               outline_labels, interior_labels, seam_allowance=0):
+    # Create seam allowance outline if specified
+    seam_outline = None
+    if seam_allowance > 0:
+        centroid_temp = _sample_outline(outline).mean(axis=0)
+        seam_outline = _offset_outline_outward(outline, seam_allowance, centroid_temp)
+    
+    # bounding box: outline control pts + seam allowance + construction lines + dart lines + all label pts
+    bbox_segs = [outline]
+    if seam_outline:
+        bbox_segs.append(seam_outline)
+    
     extra = (  [p for seg in construction_lines for p in seg]
              + [p for seg in dart_lines         for p in seg]
              + list(outline_labels.values())
              + list(interior_labels.values()) )
+    
     all_pts = np.vstack(
-        [_sample_bbox(outline)] + [np.atleast_2d(p) for p in extra]
+        [_sample_bbox(seg_list) for seg_list in bbox_segs] + 
+        [np.atleast_2d(p) for p in extra]
     )
 
     convert, w, h  = _make_converter(all_pts)
@@ -229,6 +378,16 @@ def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
         f'      <path d="{path_d}"/>',
         '    </clipPath>',
         '  </defs>',
+    ]
+    
+    # seam allowance (if present) — drawn with dashed outline
+    if seam_outline:
+        seam_allow_path_d = _outline_to_svg_path(seam_outline, convert)
+        seam_allow_d, _ = _outline_stroke_paths(seam_outline, convert)
+        lines.append(f'  <path d="{seam_allow_d}" fill="none" stroke="{stroke}"'
+                     f'        stroke-width="0.75" stroke-dasharray="2 2" opacity="0.5"/>')
+    
+    lines += [
         # bodice fill
         f'  <path d="{path_d}" fill="{fill}" stroke="none" opacity="0.85"/>',
         # construction lines clipped to interior
@@ -288,17 +447,52 @@ def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
 
 
 def render(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
-           prefix="bodice"):
+           prefix="bodice", fold=False, seam_allowance=0.75):
+    """Render bodice blocks to SVG.
+    
+    Args:
+        fold: If True, mirror front bodice on the M-D line to show full width
+        seam_allowance: Seam allowance in inches (default 0.75). Special handling:
+                       if the center-back seam (A-B line) is shorter than 1 inch,
+                       seam_allowance is set to 0 for that edge to avoid bunching.
+    """
     bk = build(alpha, beta, gamma, delta, epsilon, zeta, eta, theta)
-
+    
+    # Check center-back seam length (A to B)
+    ab_length = np.linalg.norm(bk.B - bk.A)
+    center_back_seam_allow = seam_allowance if ab_length >= 1.0 else 0
+    
     # Points shared by both views (construction rectangle corners + reference pts)
     shared_interior = {
         "B":  bk.B,  "C":  bk.C,
         "E":  bk.E,  "F":  bk.F,  "G":  bk.G,
         "H":  bk.H,  "I":  bk.I,  "J":  bk.J,
-        "L":  bk.L,  "R":  bk.R,
+        "R":  bk.R,
         "U":  bk.U,  "EE": bk.EE, "CC": bk.CC,
     }
+    
+    # Determine front bodice outline
+    front_outline = bk.front_bodice
+    front_labels = {
+        "D":  bk.D,  "M":  bk.M,  "K":  bk.K,  "N":  bk.N,
+        "P":  bk.P,  "O":  bk.O,  "Q":  bk.Q,
+        "T":  bk.T,  "V":  bk.V,  "W":  bk.W,
+        "UU": bk.UU, "VV": bk.VV, "WW": bk.WW,
+        "S":  bk.S,
+    }
+    
+    if fold:
+        # Mirror front bodice on the M-D line (fold line at x = c + 0.5, which is M[0] = D[0])
+        front_outline = _fold_front_bodice(bk.front_bodice, bk.M[0])
+        # Adjust labels for folded view: remove center points that don't appear in mirror
+        front_labels = {
+            "M":  bk.M,  "D":  bk.D,
+            "K":  bk.K,  "N":  bk.N,
+            "P":  bk.P,  "O":  bk.O,  "Q":  bk.Q,
+            "T":  bk.T,  "V":  bk.V,  "W":  bk.W,
+            "UU": bk.UU, "VV": bk.VV, "WW": bk.WW,
+            "S":  bk.S,
+        }
 
     _write_svg(
         f"{prefix}_back.svg",
@@ -312,22 +506,18 @@ def render(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
             "XX": bk.XX, "YY": bk.YY, "ZZ": bk.ZZ,
         },
         interior_labels=shared_interior,
+        seam_allowance=center_back_seam_allow,
     )
 
     _write_svg(
         f"{prefix}_front.svg",
-        bk.front_bodice,
+        front_outline,
         construction_lines=bk.construction_lines,
         dart_lines=bk.front_dart_lines,
         fill="#fdeede", stroke="#aa5522",
-        outline_labels={
-            "D":  bk.D,  "M":  bk.M,  "K":  bk.K,  "N":  bk.N,
-            "P":  bk.P,  "O":  bk.O,  "Q":  bk.Q,
-            "T":  bk.T,  "V":  bk.V,  "W":  bk.W,
-            "UU": bk.UU, "VV": bk.VV, "WW": bk.WW,
-            "S":  bk.S,
-        },
+        outline_labels=front_labels,
         interior_labels=shared_interior,
+        seam_allowance=seam_allowance,
     )
 
 
@@ -342,10 +532,13 @@ if __name__ == "__main__":
     parser.add_argument("--eta",     type=float, required=True, help="front width")
     parser.add_argument("--theta",   type=float, required=True, help="back width")
     parser.add_argument("--prefix",  type=str,   default="bodice", help="output filename prefix")
+    parser.add_argument("--fold",    action="store_true", help="render front bodice on fold (mirrored, full width)")
+    parser.add_argument("--seam-allowance", type=float, default=0.75, help="seam allowance in inches (default 0.75)")
     args = parser.parse_args()
 
     render(
         alpha=args.alpha, beta=args.beta, gamma=args.gamma,
         delta=args.delta, epsilon=args.epsilon, zeta=args.zeta,
         eta=args.eta, theta=args.theta, prefix=args.prefix,
+        fold=args.fold, seam_allowance=args.seam_allowance,
     )
