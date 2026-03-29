@@ -62,6 +62,66 @@ _INTERIOR_LABEL_OFFSETS = {
 }
 
 
+# ── Label-tightening helpers ─────────────────────────────────────────────────
+
+def _pip(pt, poly):
+    """Ray-casting point-in-polygon test. poly is Nx2 array."""
+    x, y   = float(pt[0]), float(pt[1])
+    inside = False
+    n      = len(poly)
+    px, py = float(poly[-1, 0]), float(poly[-1, 1])
+    for i in range(n):
+        cx, cy = float(poly[i, 0]), float(poly[i, 1])
+        if ((cy > y) != (py > y)) and x < (px - cx) * (y - cy) / (py - cy) + cx:
+            inside = not inside
+        px, py = cx, cy
+    return inside
+
+
+def _seg_dist(pt, p0, p1):
+    """Distance from pt to segment p0→p1."""
+    p0, p1 = np.asarray(p0, float), np.asarray(p1, float)
+    pt     = np.asarray(pt,    float)
+    v      = p1 - p0
+    l2     = float(np.dot(v, v))
+    if l2 < 1e-12:
+        return float(np.linalg.norm(pt - p0))
+    t = max(0.0, min(1.0, float(np.dot(pt - p0, v)) / l2))
+    return float(np.linalg.norm(pt - (p0 + t * v)))
+
+
+def _poly_dist(pt, poly):
+    """Minimum distance from pt to the polygon boundary (Nx2)."""
+    n = len(poly)
+    return min(_seg_dist(pt, poly[i], poly[(i + 1) % n]) for i in range(n))
+
+
+def _tighten_offset(pt, dx_in, dy_in, poly, name=""):
+    """Shrink the offset to the minimum magnitude (same direction) where the
+    text centre is inside the polygon and clear of the boundary by the text
+    bounding-box half-diagonal.
+    poly: Nx2 model-space polygon (from _sample_outline).
+    """
+    mag = float(np.hypot(dx_in, dy_in))
+    if mag < 1e-8:
+        return dx_in, dy_in
+    udx, udy = dx_in / mag, dy_in / mag
+    # Clearance = text bounding-box half-diagonal + 2 px gap
+    nchars    = max(len(name), 1)
+    text_w_px = FONT_SIZE * 0.6 * nchars
+    text_h_px = FONT_SIZE
+    clearance = float(np.hypot(text_w_px / 2, text_h_px / 2)) / SCALE + 2.0 / SCALE
+    lo, hi = clearance, mag
+    for _ in range(24):
+        m    = (lo + hi) * 0.5
+        test = np.array([float(pt[0]) + udx * m, float(pt[1]) + udy * m])
+        if _pip(test, poly) and _poly_dist(test, poly) >= clearance:
+            hi = m   # can get closer
+        else:
+            lo = m   # need more distance
+    return udx * hi, udy * hi
+
+
 def _seam_runs(segments):
     """Find consecutive runs of seam-eligible edges in a closed outline.
 
@@ -117,6 +177,44 @@ def _seam_runs(segments):
     if current:
         runs.append(np.array(current))
     return runs
+
+
+def _seam_runs_no_waist(segments, seam_allowance, seam_allowance_fn):
+    """Like _seam_runs but omits bottom-horizontal (waist) edges.
+    The back waist (FF→YY, XX→GG) and front waist (D→WW, VV→Q) lines receive
+    no seam allowance — they are the hem/cut edge.
+
+    Returns list of (run, sa) pairs: run is np.array of model-space points,
+    sa is the float seam allowance for that run (already > 0).
+    """
+    pts_bbox = _sample_bbox(segments)
+    min_y    = float(pts_bbox[:, 1].min())
+    WAIST_DY   = 0.05   # max y-variation for a "horizontal" edge (inches)
+    WAIST_BAND = 0.25   # waist must be within 0.25" of the outline minimum y
+
+    result = []
+    for run in _seam_runs(segments):
+        n         = len(run)
+        sub_start = 0
+        for i in range(n - 1):
+            p0y = float(run[i,     1])
+            p1y = float(run[i + 1, 1])
+            is_waist = (abs(p1y - p0y) < WAIST_DY and
+                        max(p0y, p1y)  < min_y + WAIST_BAND)
+            if is_waist:
+                if i > sub_start:          # flush sub-run before waist edge
+                    sub = run[sub_start : i + 1]
+                    sa  = seam_allowance_fn(sub) if seam_allowance_fn else seam_allowance
+                    if sa > 1e-6:
+                        result.append((sub, sa))
+                sub_start = i + 1          # resume after waist edge
+        # tail
+        if n - 1 > sub_start:
+            sub = run[sub_start:]
+            sa  = seam_allowance_fn(sub) if seam_allowance_fn else seam_allowance
+            if sa > 1e-6:
+                result.append((sub, sa))
+    return result
 
 
 def _offset_open_polyline(pts, distance, centroid):
@@ -389,11 +487,13 @@ def _inward_dir(pt, outline, centroid_model):
 
 
 def _label_elements(convert, outline, centroid_model, name, pt, filled,
-                    label_offsets=None):
+                    label_offsets=None, outline_poly=None):
     """Return (dot_lines, text_lines) for one labeled point.
     Dots go inside the clip group; text goes outside so it is never cut off.
     filled=True  → solid black dot, dark text  (outline point)
     filled=False → hollow circle, gray text    (interior / construction point)
+    outline_poly: Nx2 model-space polygon; when supplied, offsets for outline
+                  labels are tightened to the minimum safe clearance.
     """
     sx, sy = convert(np.array([pt]))[0]
 
@@ -404,6 +504,9 @@ def _label_elements(convert, outline, centroid_model, name, pt, filled,
         dx_in, dy_in = label_offsets[base]
         if primes % 2 == 1:
             dx_in = -dx_in          # mirror x for fold-primed labels
+        if outline_poly is not None and filled:
+            dx_in, dy_in = _tighten_offset(
+                np.asarray(pt, float), dx_in, dy_in, outline_poly, name)
         dx =  dx_in * SCALE
         dy = -dy_in * SCALE         # model y-up → SVG y-down
     else:
@@ -431,14 +534,12 @@ def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
     # Compute seam allowance runs (open polylines) in model space for bbox.
     # seam_allowance_fn, if provided, takes a run (np.array of points) and returns
     # the SA for that run, allowing per-run overrides.
-    centroid_temp = _sample_outline(outline).mean(axis=0)
+    # Waist (bottom horizontal) edges are always excluded from seam allowance.
+    outline_poly  = _sample_outline(outline)          # dense Nx2, reused below
+    centroid_temp = outline_poly.mean(axis=0)
     seam_offset_runs = []   # list of np.array (model-space offset polyline per run)
-    for run in _seam_runs(outline):
-        sa = seam_allowance_fn(run) if seam_allowance_fn is not None else seam_allowance
-        if sa > 1e-6:
-            seam_offset_runs.append(
-                _offset_open_polyline(run, sa, centroid_temp)
-            )
+    for run, sa in _seam_runs_no_waist(outline, seam_allowance, seam_allowance_fn):
+        seam_offset_runs.append(_offset_open_polyline(run, sa, centroid_temp))
 
     # bounding box: outline + seam offset only.
     # Construction lines span the full grid rectangle and must not inflate the canvas.
@@ -446,7 +547,7 @@ def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
     all_pts = np.vstack(all_pt_arrays)
 
     convert, w, h, w_in, h_in = _make_converter(all_pts)
-    centroid_model = _sample_outline(outline).mean(axis=0)        # model space
+    centroid_model = outline_poly.mean(axis=0)                    # model space
     clip_id        = "bodice-clip"
     path_d   = _outline_to_svg_path(outline, convert)
     seam_d, dart_d = _outline_stroke_paths(outline, convert)
@@ -520,7 +621,7 @@ def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
     all_texts = []
     for name, pt, filled in all_label_items:
         dot, text = _label_elements(convert, outline, centroid_model, name, pt, filled,
-                                     label_offsets)
+                                     label_offsets, outline_poly)
         all_dots.append(dot)
         if filled:
             all_texts.append(text)
