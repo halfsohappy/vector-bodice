@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="1896" height="1840"
+     viewBox="0 0 1896 1840">
+  <rect width="100%" height="100%" fill="white"/>
+  <defs>
+    <clipPath id="bodice-clip">
+      <path d="M 60.00,1673.73 L 60.00,147.58 Q 284.00,147.58 300.00,99.58 L 846.44,281.73 L 732.00,531.58 Q 948.00,60.00 948.00,915.58 L 804.00,1673.73 L 396.00,1673.73 L 360.00,915.58 L 324.00,1673.73 L 60.00,1673.73 Z"/>
+    </clipPath>
+  </defs>
+  <path d="M 60.00,1673.73 L 60.00,147.58 Q 284.00,147.58 300.00,99.58 L 846.44,281.73 L 732.00,531.58 Q 948.00,60.00 948.00,915.58 L 804.00,1673.73 L 396.00,1673.73 L 360.00,915.58 L 324.00,1673.73 L 60.00,1673.73 Z" fill="#dce8f5" stroke="none" opacity="0.85"/>
+  <g clip-path="url(#bodice-clip)">
+    <line x1="948.0" y1="147.6" x2="948.0" y2="1779.6"          stroke="#aaa" stroke-width="0.75" stroke-dasharray="4 3"/>
+    <line x1="60.0" y1="531.6" x2="1836.0" y2="531.6"          stroke="#aaa" stroke-width="0.75" stroke-dasharray="4 3"/>
+    <line x1="60.0" y1="915.6" x2="1836.0" y2="915.6"          stroke="#aaa" stroke-width="0.75" stroke-dasharray="4 3"/>
+    <line x1="60.0" y1="1673.7" x2="804.0" y2="1673.7"          stroke="#aaa" stroke-width="0.75" stroke-dasharray="4 3"/>
+  </g>
+  <g>
+    <line x1="324.0" y1="1673.7" x2="396.0" y2="1673.7"          stroke="#bbb" stroke-width="0.75" stroke-dasharray="4 3"/>
+    <line x1="360.0" y1="915.6" x2="360.0" y2="1673.7"          stroke="#bbb" stroke-width="0.75" stroke-dasharray="4 3"/>
+  </g>
+  <path d="M 60.00,1673.73 L 60.00,147.58 M 60.00,147.58 Q 284.00,147.58 300.00,99.58 M 300.00,99.58 L 846.44,281.73 M 846.44,281.73 L 732.00,531.58 M 732.00,531.58 Q 948.00,60.00 948.00,915.58 M 948.00,915.58 L 804.00,1673.73 M 804.00,1673.73 L 396.00,1673.73 M 324.00,1673.73 L 60.00,1673.73" fill="none" stroke="#2255aa"        stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="M 396.00,1673.73 L 360.00,915.58 M 360.00,915.58 L 324.00,1673.73" fill="none" stroke="#bbb"        stroke-width="1" stroke-linejoin="round"/>
+  <g clip-path="url(#bodice-clip)">
+    <circle cx="60.0" cy="1779.6" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="1836.0" cy="147.6" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="948.0" cy="147.6" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="948.0" cy="1779.6" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="60.0" cy="531.6" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="1836.0" cy="531.6" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="60.0" cy="915.6" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="1836.0" cy="915.6" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="1548.0" cy="387.6" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="1299.8" cy="189.6" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="948.0" cy="1141.7" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="804.0" cy="1779.6" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="732.0" cy="243.6" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="60.0" cy="147.6" r="2.5" fill="black"/>
+    <circle cx="60.0" cy="1673.7" r="2.5" fill="black"/>
+    <circle cx="300.0" cy="99.6" r="2.5" fill="black"/>
+    <circle cx="846.4" cy="281.7" r="2.5" fill="black"/>
+    <circle cx="732.0" cy="531.6" r="2.5" fill="black"/>
+    <circle cx="948.0" cy="915.6" r="2.5" fill="black"/>
+    <circle cx="804.0" cy="1673.7" r="2.5" fill="black"/>
+    <circle cx="324.0" cy="1673.7" r="2.5" fill="black"/>
+    <circle cx="396.0" cy="1673.7" r="2.5" fill="black"/>
+    <circle cx="360.0" cy="915.6" r="2.5" fill="black"/>
+  </g>
+  <text x="74.1" y="161.7"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">A</text>
+  <text x="74.1" y="1659.6"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">GG</text>
+  <text x="308.9" y="117.5"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">AA</text>
+  <text x="828.1" y="289.7"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">DD</text>
+  <text x="740.3" y="513.4"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">BB</text>
+  <text x="928.1" y="913.7"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">O</text>
+  <text x="791.2" y="1658.3"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">FF</text>
+  <text x="310.2" y="1659.3"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">XX</text>
+  <text x="409.8" y="1659.3"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">YY</text>
+  <text x="360.0" y="895.6"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">ZZ</text>
+</svg>

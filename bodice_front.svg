@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="1896" height="2119"
+     viewBox="0 0 1896 2119">
+  <rect width="100%" height="100%" fill="white"/>
+  <defs>
+    <clipPath id="bodice-clip">
+      <path d="M 1836.00,666.65 L 1836.00,2058.65 L 1452.00,2058.65 L 1416.00,1420.80 L 1380.00,2058.65 L 1044.00,2058.65 L 948.00,1468.80 L 1368.00,1324.80 L 948.00,1372.80 L 948.00,1194.65 Q 948.00,60.00 1104.00,810.65 L 1051.63,558.65 L 1548.00,378.65 Q 1548.00,666.65 1836.00,666.65 Z"/>
+    </clipPath>
+  </defs>
+  <path d="M 1836.00,666.65 L 1836.00,2058.65 L 1452.00,2058.65 L 1416.00,1420.80 L 1380.00,2058.65 L 1044.00,2058.65 L 948.00,1468.80 L 1368.00,1324.80 L 948.00,1372.80 L 948.00,1194.65 Q 948.00,60.00 1104.00,810.65 L 1051.63,558.65 L 1548.00,378.65 Q 1548.00,666.65 1836.00,666.65 Z" fill="#fdeede" stroke="none" opacity="0.85"/>
+  <g clip-path="url(#bodice-clip)">
+    <line x1="948.0" y1="426.6" x2="948.0" y2="2058.6"          stroke="#aaa" stroke-width="0.75" stroke-dasharray="4 3"/>
+    <line x1="60.0" y1="810.6" x2="1836.0" y2="810.6"          stroke="#aaa" stroke-width="0.75" stroke-dasharray="4 3"/>
+    <line x1="60.0" y1="1194.6" x2="1836.0" y2="1194.6"          stroke="#aaa" stroke-width="0.75" stroke-dasharray="4 3"/>
+    <line x1="60.0" y1="1952.8" x2="804.0" y2="1952.8"          stroke="#aaa" stroke-width="0.75" stroke-dasharray="4 3"/>
+  </g>
+  <g>
+    <line x1="948.0" y1="1372.8" x2="948.0" y2="1420.8"          stroke="#bbb" stroke-width="0.75" stroke-dasharray="4 3"/>
+    <line x1="948.0" y1="1420.8" x2="948.0" y2="1468.8"          stroke="#bbb" stroke-width="0.75" stroke-dasharray="4 3"/>
+    <line x1="948.0" y1="1420.8" x2="1368.0" y2="1324.8"          stroke="#bbb" stroke-width="0.75" stroke-dasharray="4 3"/>
+    <line x1="1380.0" y1="2058.6" x2="1452.0" y2="2058.6"          stroke="#bbb" stroke-width="0.75" stroke-dasharray="4 3"/>
+    <line x1="1416.0" y1="1420.8" x2="1416.0" y2="2058.6"          stroke="#bbb" stroke-width="0.75" stroke-dasharray="4 3"/>
+  </g>
+  <path d="M 1836.00,666.65 L 1836.00,2058.65 M 1836.00,2058.65 L 1452.00,2058.65 M 1380.00,2058.65 L 1044.00,2058.65 M 1044.00,2058.65 L 948.00,1468.80 M 948.00,1372.80 L 948.00,1194.65 M 948.00,1194.65 Q 948.00,60.00 1104.00,810.65 M 1104.00,810.65 L 1051.63,558.65 M 1051.63,558.65 L 1548.00,378.65 M 1548.00,378.65 Q 1548.00,666.65 1836.00,666.65" fill="none" stroke="#aa5522"        stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="M 1452.00,2058.65 L 1416.00,1420.80 M 1416.00,1420.80 L 1380.00,2058.65 M 948.00,1468.80 L 1368.00,1324.80 M 1368.00,1324.80 L 948.00,1372.80" fill="none" stroke="#bbb"        stroke-width="1" stroke-linejoin="round"/>
+  <g clip-path="url(#bodice-clip)">
+    <circle cx="60.0" cy="2058.6" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="1836.0" cy="426.6" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="948.0" cy="426.6" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="948.0" cy="2058.6" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="60.0" cy="810.6" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="1836.0" cy="810.6" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="60.0" cy="1194.6" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="1836.0" cy="1194.6" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="1548.0" cy="666.6" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="1299.8" cy="468.6" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="948.0" cy="1420.8" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="804.0" cy="2058.6" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="732.0" cy="522.6" r="3"            fill="white" stroke="#888" stroke-width="1"/>
+    <circle cx="1836.0" cy="2058.6" r="2.5" fill="black"/>
+    <circle cx="1836.0" cy="666.6" r="2.5" fill="black"/>
+    <circle cx="1548.0" cy="378.6" r="2.5" fill="black"/>
+    <circle cx="1051.6" cy="558.6" r="2.5" fill="black"/>
+    <circle cx="1104.0" cy="810.6" r="2.5" fill="black"/>
+    <circle cx="948.0" cy="1194.6" r="2.5" fill="black"/>
+    <circle cx="1044.0" cy="2058.6" r="2.5" fill="black"/>
+    <circle cx="1368.0" cy="1324.8" r="2.5" fill="black"/>
+    <circle cx="948.0" cy="1468.8" r="2.5" fill="black"/>
+    <circle cx="1416.0" cy="1420.8" r="2.5" fill="black"/>
+    <circle cx="948.0" cy="1372.8" r="2.5" fill="black"/>
+    <circle cx="1380.0" cy="2058.6" r="2.5" fill="black"/>
+    <circle cx="1452.0" cy="2058.6" r="2.5" fill="black"/>
+    <circle cx="1416.0" cy="1324.8" r="2.5" fill="black"/>
+  </g>
+  <text x="1821.9" y="2044.5"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">D</text>
+  <text x="1821.9" y="680.8"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">M</text>
+  <text x="1536.5" y="395.0"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">K</text>
+  <text x="1069.1" y="568.4"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">N</text>
+  <text x="1099.9" y="791.1"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">P</text>
+  <text x="959.8" y="1178.5"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">O</text>
+  <text x="1057.0" y="2043.4"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">Q</text>
+  <text x="1387.5" y="1320.4"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">T</text>
+  <text x="930.8" y="1458.5"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">V</text>
+  <text x="1416.0" y="1400.8"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">W</text>
+  <text x="961.3" y="1357.9"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">UU</text>
+  <text x="1366.3" y="2044.1"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">VV</text>
+  <text x="1465.7" y="2044.1"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">WW</text>
+  <text x="1413.1" y="1305.0"        font-family="monospace" font-size="11"        fill="#222" font-weight="bold"        text-anchor="middle" dominant-baseline="middle">S</text>
+</svg>
