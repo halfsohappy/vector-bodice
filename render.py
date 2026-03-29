@@ -9,122 +9,97 @@ FONT_SIZE    = 11   # px
 
 
 def _offset_outline_outward(segments, distance, centroid):
-    """Create an outward-offset outline for seam allowance.
-    Simplistic approach: offset line endpoints perpendicular to adjacent edges.
-    For curves, sample and offset the samples."""
+    """Compute a true parallel-offset outline for seam allowance.
+
+    Samples the entire outline as a single closed polygon polyline then applies
+    per-vertex miter-bisector offsetting so the result is a uniform, connected
+    closed path with no gaps at corners or curve junctions.
+    """
     if distance < 1e-6:
-        return segments  # no offset needed
-    
+        return segments
+
     centroid = np.asarray(centroid, float)
-    offset_segs = []
-    
-    for idx, seg in enumerate(segments):
-        if seg[0] == "line":
-            _, p0, p1 = seg
-            p0, p1 = np.asarray(p0, float), np.asarray(p1, float)
-            
-            # Get perpendicular direction pointing outward
-            edge_dir = p1 - p0
-            perp = np.array([-edge_dir[1], edge_dir[0]])
-            perp = perp / np.linalg.norm(perp)
-            
-            # Check which direction points outward from centroid
-            edge_mid = (p0 + p1) / 2
-            outward_test = edge_mid + perp
-            if np.linalg.norm(outward_test - centroid) > np.linalg.norm(edge_mid - centroid):
-                # perp points outward
-                offset_p0 = p0 + perp * distance
-                offset_p1 = p1 + perp * distance
-            else:
-                # -perp points outward
-                offset_p0 = p0 - perp * distance
-                offset_p1 = p1 - perp * distance
-            
-            offset_segs.append(("line", offset_p0, offset_p1))
-        
-        elif seg[0] == "dart":
-            _, p0, p1 = seg
-            p0, p1 = np.asarray(p0, float), np.asarray(p1, float)
-            
-            # Darts typically don't get seam allowance, but we'll offset anyway
-            edge_dir = p1 - p0
-            perp = np.array([-edge_dir[1], edge_dir[0]])
-            perp = perp / np.linalg.norm(perp)
-            
-            edge_mid = (p0 + p1) / 2
-            if np.linalg.norm(edge_mid + perp - centroid) > np.linalg.norm(edge_mid - centroid):
-                offset_p0 = p0 + perp * distance
-                offset_p1 = p1 + perp * distance
-            else:
-                offset_p0 = p0 - perp * distance
-                offset_p1 = p1 - perp * distance
-            
-            offset_segs.append(("dart", offset_p0, offset_p1))
-        
+
+    # ── Sample the entire outline as one closed polygon ──────────────────────
+    pts = []
+    for seg in segments:
+        if seg[0] in ("line", "dart"):
+            if not pts:
+                pts.append(np.asarray(seg[1], float))
+            end = np.asarray(seg[2], float)
+            if np.linalg.norm(end - pts[0]) > 1e-6:
+                pts.append(end)
         elif seg[0] == "quadratic":
             _, p0, cp, p3 = seg
-            # For quadratic, we'll sample and create a polyline
-            ts = np.linspace(0, 1, 15)
-            pts_model = np.array([(1-t)**2 * p0 + 2*(1-t)*t * cp + t**2 * p3 for t in ts])
-            
-            # Offset each point outward (simplified: use centroid direction)
-            offset_pts = []
-            for pt in pts_model:
-                outdir = pt - centroid
-                outdir = outdir / np.linalg.norm(outdir) if np.linalg.norm(outdir) > 1e-8 else np.array([1.0, 0.0])
-                offset_pts.append(pt + outdir * distance)
-            
-            # Convert to line segments
-            for i in range(len(offset_pts) - 1):
-                offset_segs.append(("line", offset_pts[i], offset_pts[i+1]))
-        
+            p0 = np.asarray(p0, float); cp = np.asarray(cp, float); p3 = np.asarray(p3, float)
+            if not pts:
+                pts.append(p0.copy())
+            for i in range(1, 13):
+                t = i / 12.0
+                q = (1-t)**2*p0 + 2*(1-t)*t*cp + t**2*p3
+                if i < 12 or np.linalg.norm(q - pts[0]) > 1e-6:
+                    pts.append(q)
         elif seg[0] == "cubic_curve":
             _, func, p0, p1 = seg
-            ts = np.linspace(0, 1, 40)
-            pts_model = np.array([func(t) for t in ts])
-            
-            offset_pts = []
-            curve_orientation = None
-            
-            for i, pt in enumerate(pts_model):
-                # Calculate local tangent
-                if i == 0:
-                    tangent = pts_model[1] - pts_model[0]
-                elif i == len(pts_model) - 1:
-                    tangent = pts_model[-1] - pts_model[-2]
-                else:
-                    tangent = pts_model[i+1] - pts_model[i-1]
-                
-                tangent_len = np.linalg.norm(tangent)
-                if tangent_len > 1e-8:
-                    tangent = tangent / tangent_len
-                    # Get perpendicular pointing outward
-                    perp = np.array([-tangent[1], tangent[0]])
-                    
-                    if curve_orientation is None:
-                        # Determine orientation precisely using the midpoint once
-                        mid_pt = pts_model[len(pts_model)//2]
-                        mid_tangent = pts_model[len(pts_model)//2 + 1] - pts_model[len(pts_model)//2 - 1]
-                        mid_tangent = mid_tangent / np.linalg.norm(mid_tangent)
-                        mid_perp = np.array([-mid_tangent[1], mid_tangent[0]])
-                        
-                        outward_test = mid_pt + mid_perp
-                        if np.linalg.norm(outward_test - centroid) < np.linalg.norm(mid_pt - centroid):
-                            curve_orientation = -1
-                        else:
-                            curve_orientation = 1
-                            
-                    offset_pts.append(pt + perp * curve_orientation * distance)
-                else:
-                    # fallback to centroid logic
-                    outdir = pt - centroid
-                    outdir = outdir / np.linalg.norm(outdir) if np.linalg.norm(outdir) > 1e-8 else np.array([1.0, 0.0])
-                    offset_pts.append(pt + outdir * distance)
-            
-            for i in range(len(offset_pts) - 1):
-                offset_segs.append(("line", offset_pts[i], offset_pts[i+1]))
-    
-    return offset_segs
+            if not pts:
+                pts.append(np.asarray(func(0), float))
+            for i in range(1, 21):
+                t = i / 20.0
+                q = np.asarray(func(t), float)
+                if i < 20 or np.linalg.norm(q - pts[0]) > 1e-6:
+                    pts.append(q)
+
+    pts = np.array(pts)
+    n = len(pts)
+    if n < 3:
+        return segments
+
+    # ── Miter-bisector offset at every vertex ────────────────────────────────
+    MITER_LIMIT = 4.0
+    offset_pts = []
+
+    for i in range(n):
+        p_prev = pts[(i - 1) % n]
+        p_curr = pts[i]
+        p_next = pts[(i + 1) % n]
+
+        e_in  = p_curr - p_prev
+        e_out = p_next - p_curr
+        li = np.linalg.norm(e_in)
+        lo = np.linalg.norm(e_out)
+
+        if li < 1e-8 or lo < 1e-8:
+            d = p_curr - centroid
+            dn = np.linalg.norm(d)
+            offset_pts.append(p_curr + (d/dn if dn > 1e-8 else np.array([1., 0.])) * distance)
+            continue
+
+        # Outward-facing perpendiculars for each adjacent edge
+        ni = np.array([-e_in[1]/li,   e_in[0]/li ])
+        no = np.array([-e_out[1]/lo,  e_out[0]/lo])
+
+        # Point both normals away from centroid
+        if np.linalg.norm((p_prev+p_curr)/2 + ni - centroid) < np.linalg.norm((p_prev+p_curr)/2 - centroid):
+            ni = -ni
+        if np.linalg.norm((p_curr+p_next)/2 + no - centroid) < np.linalg.norm((p_curr+p_next)/2 - centroid):
+            no = -no
+
+        # Miter bisector
+        bisector = ni + no
+        b_len = np.linalg.norm(bisector)
+        if b_len < 1e-8:
+            offset_pts.append(p_curr + ni * distance)
+            continue
+        bisector /= b_len
+
+        # Scale so the perpendicular distance to each offset edge equals `distance`
+        sin_half = max(np.dot(bisector, ni), 1.0 / MITER_LIMIT)
+        offset_pts.append(p_curr + bisector * (distance / sin_half))
+
+    offset_pts = np.array(offset_pts)
+
+    return [("line", offset_pts[i], offset_pts[(i+1) % len(offset_pts)])
+            for i in range(len(offset_pts))]
 
 
 def _mirror_point(pt, fold_line_x):
@@ -412,11 +387,10 @@ def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
         '  </defs>',
     ]
     
-    # seam allowance (if present) — drawn with dashed outline
+    # seam allowance (if present) — drawn as single closed dashed outline
     if seam_outline:
         seam_allow_path_d = _outline_to_svg_path(seam_outline, convert)
-        seam_allow_d, _ = _outline_stroke_paths(seam_outline, convert)
-        lines.append(f'  <path d="{seam_allow_d}" fill="none" stroke="{stroke}"'
+        lines.append(f'  <path d="{seam_allow_path_d}" fill="none" stroke="{stroke}"'
                      f'        stroke-width="0.75" stroke-dasharray="2 2" opacity="0.5"/>')
     
     lines += [
@@ -454,23 +428,19 @@ def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
         f'        stroke-width="1" stroke-linejoin="round"/>',
     ]
 
-    # dots clipped to bodice interior, text rendered outside clip so it's never cut off
+    # dots and text both clipped to bodice interior so labels stay inside the outline
     all_label_items = (
         [(name, pt, False) for name, pt in interior_labels.items()] +
         [(name, pt, True)  for name, pt in outline_labels.items()]
     )
 
     lines.append(f'  <g clip-path="url(#{clip_id})">')
-    text_lines = []
     for name, pt, filled in all_label_items:
         dot, text = _label_elements(convert, outline, centroid_model, name, pt, filled)
         lines += dot
         if filled:
-            text_lines += text
+            lines += text
     lines.append('  </g>')
-
-    # text on top, unclipped
-    lines += text_lines
     lines.append('</svg>')
 
     with open(path, "w") as f:
