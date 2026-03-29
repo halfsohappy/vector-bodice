@@ -14,8 +14,15 @@ def _sample_bbox(segments):
     for seg in segments:
         if seg[0] in ("line", "dart"):
             pts += [seg[1], seg[2]]
-        else:  # quadratic: (type, P0, CP, P3)
+        elif seg[0] == "quadratic":  # quadratic: (type, P0, CP, P3)
             pts += [seg[1], seg[2], seg[3]]
+        elif seg[0] == "cubic_curve":  # cubic_curve: (type, func, P0, P1)
+            # Sample the curve to get representative points for bbox
+            _, func, p0, p1 = seg
+            pts += [p0, p1]
+            # Add midpoint sample
+            mid = func(0.5)
+            pts.append(mid)
     return np.array(pts)
 
 
@@ -36,7 +43,7 @@ def _make_converter(all_pts):
 
 
 def _outline_to_svg_path(segments, convert):
-    """Full closed path (fill + clip). Dart segments treated as plain lines."""
+    """Full closed path (fill + clip). Dart and curve segments treated as lines/polylines."""
     parts = []
     for idx, seg in enumerate(segments):
         if seg[0] in ("line", "dart"):
@@ -45,7 +52,7 @@ def _outline_to_svg_path(segments, convert):
             if idx == 0:
                 parts.append(f"M {p0[0]:.2f},{p0[1]:.2f}")
             parts.append(f"L {p1[0]:.2f},{p1[1]:.2f}")
-        else:  # quadratic: (type, P0, CP, P3)
+        elif seg[0] == "quadratic":  # quadratic: (type, P0, CP, P3)
             _, p0, cp, p3 = seg
             s0  = convert(p0)[0]
             sc  = convert(cp)[0]
@@ -53,6 +60,16 @@ def _outline_to_svg_path(segments, convert):
             if idx == 0:
                 parts.append(f"M {s0[0]:.2f},{s0[1]:.2f}")
             parts.append(f"Q {sc[0]:.2f},{sc[1]:.2f} {s3[0]:.2f},{s3[1]:.2f}")
+        elif seg[0] == "cubic_curve":  # cubic_curve: (type, func, P0, P1)
+            # Sample the curve and create a polyline approximation
+            _, func, p0, p1 = seg
+            ts = np.linspace(0, 1, 40)  # 40-point sample for smooth curve
+            pts_model = np.array([func(t) for t in ts])
+            pts_svg = convert(pts_model)
+            if idx == 0:
+                parts.append(f"M {pts_svg[0, 0]:.2f},{pts_svg[0, 1]:.2f}")
+            for pt in pts_svg[1:]:
+                parts.append(f"L {pt[0]:.2f},{pt[1]:.2f}")
     parts.append("Z")
     return " ".join(parts)
 
@@ -66,11 +83,20 @@ def _outline_stroke_paths(segments, convert):
             p1 = convert(seg[2])[0]
             chunk = f"M {p0[0]:.2f},{p0[1]:.2f} L {p1[0]:.2f},{p1[1]:.2f}"
             (dart if seg[0] == "dart" else seam).append(chunk)
-        else:  # quadratic → always a seam
+        elif seg[0] == "quadratic":  # quadratic → always a seam
             _, p0, cp, p3 = seg
             s0, sc, s3 = convert(p0)[0], convert(cp)[0], convert(p3)[0]
             seam.append(f"M {s0[0]:.2f},{s0[1]:.2f}"
                         f" Q {sc[0]:.2f},{sc[1]:.2f} {s3[0]:.2f},{s3[1]:.2f}")
+        elif seg[0] == "cubic_curve":  # cubic_curve → seam (sample curve)
+            _, func, p0, p1 = seg
+            ts = np.linspace(0, 1, 40)
+            pts_model = np.array([func(t) for t in ts])
+            pts_svg = convert(pts_model)
+            path = f"M {pts_svg[0, 0]:.2f},{pts_svg[0, 1]:.2f}"
+            for pt in pts_svg[1:]:
+                path += f" L {pt[0]:.2f},{pt[1]:.2f}"
+            seam.append(path)
     return " ".join(seam), " ".join(dart)
 
 
@@ -82,10 +108,15 @@ def _sample_outline(segments, n=80):
             if idx == 0:
                 pts.append(seg[1])
             pts.append(seg[2])
-        else:  # quadratic: (type, P0, CP, P3)
+        elif seg[0] == "quadratic":  # quadratic: (type, P0, CP, P3)
             _, p0, cp, p3 = seg
             ts  = np.linspace(0, 1, n)[:, None]
             smp = (1-ts)**2 * p0 + 2*(1-ts)*ts * cp + ts**2 * p3
+            pts.extend(smp if idx == 0 else smp[1:])
+        elif seg[0] == "cubic_curve":  # cubic_curve: (type, func, P0, P1)
+            _, func, p0, p1 = seg
+            ts = np.linspace(0, 1, n)
+            smp = np.array([func(t) for t in ts])
             pts.extend(smp if idx == 0 else smp[1:])
     return np.array(pts)
 
@@ -110,6 +141,17 @@ def _inward_dir(pt, outline, centroid_model):
             p0, cp, p3 = (np.asarray(seg[i], float) for i in range(1, 4))
             if np.allclose(p0, pt, atol=1e-4): next_n = cp    # tangent leaves toward cp
             if np.allclose(p3, pt, atol=1e-4): prev_n = cp    # tangent arrived from cp
+        elif seg[0] == "cubic_curve":
+            _, func, p0, p1 = seg
+            p0, p1 = np.asarray(p0, float), np.asarray(p1, float)
+            if np.allclose(p0, pt, atol=1e-4): 
+                # Tangent at start: direction from p0 toward nearby point on curve
+                next_pt = func(0.1)
+                next_n = np.asarray(next_pt, float)
+            if np.allclose(p1, pt, atol=1e-4):
+                # Tangent at end: direction from nearby point back to p1
+                prev_pt = func(0.9)
+                prev_n = np.asarray(prev_pt, float)
 
     c = np.asarray(centroid_model, float)
 
