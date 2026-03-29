@@ -480,7 +480,40 @@
     /* Responsive */
     @media (max-width: 680px) {
       .app-layout { flex-direction: column; }
-      .panel-left  { width: 100%; max-height: 48dvh; border-right: none; border-bottom: 1px solid var(--border); }
+      .panel-left  { width: 100%; max-height: 50dvh; border-right: none; border-bottom: 1px solid var(--border); }
+
+      /* Header: hide long attribution on narrow screens */
+      .brand-sub { display: none; }
+      .main-header { padding: 0 12px; }
+
+      /* Larger tap targets for inputs */
+      .form-group label { font-size: 10px; }
+      .form-group input[type="number"] { font-size: 15px; padding: 9px 10px; }
+
+      /* Bigger SA pill touch area */
+      .sa-pill { padding: 10px 15px; }
+
+      /* Bigger checkbox tap zone */
+      .cb-row input[type="checkbox"] { width: 18px; height: 18px; }
+      .cb-row label { font-size: 13px; }
+      .cb-row { margin: 10px 0 5px; }
+
+      /* Taller primary button */
+      .btn { padding: 11px 18px; }
+
+      /* Download bar: wrap and fill width */
+      .download-bar { flex-wrap: wrap; }
+      .dl-spacer { display: none; }
+      .download-bar .btn { flex: 1 1 auto; }
+
+      /* Tabs: larger touch target */
+      .tab { padding: 10px 18px; }
+    }
+
+    /* Very small phones: single-column form grid */
+    @media (max-width: 420px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .brand-name { font-size: 17px; }
     }
   </style>
 </head>
@@ -518,38 +551,38 @@
 
             <div class="form-group">
               <label for="inp-alpha" title="Circumference at the natural waist">Waist</label>
-              <input type="number" id="inp-alpha" value="28" step="0.25" min="18" max="60">
+              <input type="number" id="inp-alpha" value="28" step="0.25" min="18" max="60" inputmode="decimal">
             </div>
             <div class="form-group">
               <label for="inp-beta" title="Circumference at the fullest part of the bust">Bust</label>
-              <input type="number" id="inp-beta" value="36" step="0.25" min="24" max="72">
+              <input type="number" id="inp-beta" value="36" step="0.25" min="24" max="72" inputmode="decimal">
             </div>
 
             <div class="form-group">
               <label for="inp-gamma" title="Distance down the back from base of neck (nape) to natural waist">Back nape to waist</label>
-              <input type="number" id="inp-gamma" value="15.5" step="0.25" min="10" max="26">
+              <input type="number" id="inp-gamma" value="15.5" step="0.25" min="10" max="26" inputmode="decimal">
             </div>
             <div class="form-group">
               <label for="inp-delta" title="Over the shoulder from base of neck to shoulder tip">Neck to shoulder</label>
-              <input type="number" id="inp-delta" value="5" step="0.25" min="2" max="10">
+              <input type="number" id="inp-delta" value="5" step="0.25" min="2" max="10" inputmode="decimal">
             </div>
 
             <div class="form-group">
               <label for="inp-epsilon" title="Straight from shoulder tip down to bust point (nipple level)">Shoulder center to bust point</label>
-              <input type="number" id="inp-epsilon" value="9" step="0.25" min="5" max="16">
+              <input type="number" id="inp-epsilon" value="9" step="0.25" min="5" max="16" inputmode="decimal">
             </div>
             <div class="form-group">
               <label for="inp-zeta" title="Full distance between bust points, nipple to nipple">Bust point to bust point</label>
-              <input type="number" id="inp-zeta" value="7" step="0.25" min="3" max="14">
+              <input type="number" id="inp-zeta" value="7" step="0.25" min="3" max="14" inputmode="decimal">
             </div>
 
             <div class="form-group">
               <label for="inp-eta" title="Width of the front body from side seam to center front, at bust level">Front width</label>
-              <input type="number" id="inp-eta" value="14" step="0.25" min="8" max="24">
+              <input type="number" id="inp-eta" value="14" step="0.25" min="8" max="24" inputmode="decimal">
             </div>
             <div class="form-group">
               <label for="inp-theta" title="Width of the back body from side seam to center back, at bust level">Back width</label>
-              <input type="number" id="inp-theta" value="14" step="0.25" min="8" max="24">
+              <input type="number" id="inp-theta" value="14" step="0.25" min="8" max="24" inputmode="decimal">
             </div>
 
           </div>
@@ -565,7 +598,7 @@
 
           <div class="form-group" style="margin-bottom:5px">
             <label for="inp-seam">Seam allowance (in)</label>
-            <input type="number" id="inp-seam" value="0.75" step="0.125" min="0" max="2">
+            <input type="number" id="inp-seam" value="0.75" step="0.125" min="0" max="2" inputmode="decimal">
           </div>
           <div class="sa-presets" id="saPresets">
             <button class="sa-pill" data-sa="0">none</button>
