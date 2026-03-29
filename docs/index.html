@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>vector bodice — pattern generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@300;400;500;700&family=Playwrite+DE+Grund:wght@400&display=swap" rel="stylesheet">
+  <style>
+    /* =============================================
+       vector bodice — pattern generator
+       Design language: Gooey / Annabel Portfolio
+       Light / Dark · Martian Mono · Playwrite DE Grund
+       ============================================= */
+
+    :root {
+      --bg:            #ffffff;
+      --bg-alt:        #f4f5f6;
+      --bg-card:       #ffffff;
+      --bg-input:      #f9fafb;
+      --bg-hover:      #eef0f3;
+      --border:        #dddddd;
+      --border-focus:  #90849c;
+      --text-dark:     #2A2F36;
+      --text-medium:   #6C7A89;
+      --text-light:    #ABB7B7;
+      --accent:        #90849c;
+      --accent-hover:  #7a6f8a;
+      --accent-dim:    rgba(144,132,156,0.12);
+      --header-bg:     #DAC7FF;
+      --header-text:   #2A2F36;
+      --btn-pri-bg:    #4a5568;
+      --btn-pri-hover: #3d4659;
+      --btn-pri-text:  #ffffff;
+      --success:       #4caf50;
+      --danger:        #d64541;
+      --shadow:        0 1px 4px rgba(0,0,0,.06);
+      --radius:        6px;
+      --radius-lg:     12px;
+      --font:          'Martian Mono', monospace;
+      --font-title:    'Playwrite DE Grund', serif;
+    }
+
+    :root.dark {
+      --bg:            #1a1d21;
+      --bg-alt:        #141618;
+      --bg-card:       #1f2227;
+      --bg-input:      #252a31;
+      --bg-hover:      #2a2f38;
+      --border:        #2e3540;
+      --border-focus:  #a898b8;
+      --text-dark:     #e8eaed;
+      --text-medium:   #8c9bb0;
+      --text-light:    #4a5568;
+      --accent:        #a898b8;
+      --accent-hover:  #b8a8cc;
+      --accent-dim:    rgba(168,152,184,0.12);
+      --header-bg:     #1e1628;
+      --header-text:   #e8eaed;
+      --btn-pri-bg:    #90849c;
+      --btn-pri-hover: #a898b8;
+      --btn-pri-text:  #ffffff;
+      --shadow:        0 1px 6px rgba(0,0,0,.30);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 300;
+      color: var(--text-dark);
+      background: var(--bg-alt);
+      line-height: 1.6;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ──────────────────────────────────── */
+    .main-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      height: 50px;
+      flex-shrink: 0;
+      background: var(--header-bg);
+      border-bottom: 1px solid rgba(0,0,0,.08);
+    }
+    .header-brand {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+    .brand-name {
+      font-family: var(--font-title);
+      font-size: 21px;
+      font-weight: 400;
+      color: var(--header-text);
+      letter-spacing: -.01em;
+    }
+    .brand-sub {
+      font-family: var(--font);
+      font-size: 10px;
+      font-weight: 400;
+      color: var(--header-text);
+      opacity: .55;
+      letter-spacing: .02em;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 99px;
+      background: rgba(0,0,0,.07);
+      font-size: 10px;
+      color: var(--header-text);
+      opacity: .9;
+      transition: background .15s;
+    }
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: var(--text-light);
+      transition: background .3s;
+    }
+    .status-dot.loading { background: #e3bb7f; animation: pulse 1.2s infinite; }
+    .status-dot.ready   { background: var(--success); box-shadow: 0 0 5px rgba(76,175,80,.5); }
+    .status-dot.error   { background: var(--danger); }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
+
+    .btn-theme {
+      font-family: var(--font);
+      font-size: 11px;
+      padding: 5px 11px;
+      border: 1px solid rgba(0,0,0,.15);
+      border-radius: var(--radius);
+      background: rgba(0,0,0,.06);
+      color: var(--header-text);
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .btn-theme:hover { background: rgba(0,0,0,.12); }
+
+    /* ── App layout ──────────────────────────────── */
+    .app-layout {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    /* ── Left panel ──────────────────────────────── */
+    .panel-left {
+      width: 310px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--header-bg);
+      border-right: 1px solid rgba(0,0,0,.08);
+    }
+    .panel-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 13px;
+      scrollbar-width: none;
+    }
+    .panel-scroll::-webkit-scrollbar { display: none; }
+
+    /* ── Cards ───────────────────────────────────── */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 15px;
+      margin-bottom: 11px;
+      box-shadow: var(--shadow);
+    }
+    .card h2 {
+      font-family: var(--font-title);
+      font-size: 15px;
+      font-weight: 400;
+      color: var(--text-dark);
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .hint-text {
+      font-size: 10px;
+      color: var(--text-medium);
+      margin-bottom: 10px;
+      line-height: 1.4;
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      gap: 8px;
+    }
+    .card-header h2 {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+    .btn-sm {
+      font-size: 11px;
+      font-weight: 400;
+      padding: 4px 11px;
+      border-radius: 99px;
+    }
+    .size-tag {
+      display: none;
+      font-size: 10px;
+      color: var(--accent);
+      background: var(--accent-dim);
+      border-radius: 99px;
+      padding: 1px 7px;
+      vertical-align: middle;
+      margin-left: 5px;
+    }
+    .size-tag.visible { display: inline; }
+
+    /* ── Form ────────────────────────────────────── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px 11px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .form-group label {
+      font-size: 9px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--text-medium);
+    }
+    .form-group input[type="number"] {
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 400;
+      padding: 6px 9px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-input);
+      color: var(--text-dark);
+      outline: none;
+      width: 100%;
+      transition: border-color .15s, background .15s;
+    }
+    .form-group input[type="number"]:focus {
+      border-color: var(--border-focus);
+      background: var(--bg-card);
+    }
+    .form-group input[type="number"]::-webkit-inner-spin-button { opacity: .3; }
+
+    .form-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 11px 0;
+    }
+
+    /* Seam allowance presets */
+    .sa-presets {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin-top: 5px;
+    }
+    .sa-pill {
+      font-family: var(--font);
+      font-size: 11px;
+      padding: 3px 9px;
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      background: var(--bg-input);
+      color: var(--text-medium);
+      cursor: pointer;
+      transition: all .12s;
+    }
+    .sa-pill:hover { border-color: var(--accent); color: var(--accent); }
+    .sa-pill.active {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    /* Checkbox */
+    .cb-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin: 8px 0 4px;
+    }
+    .cb-row input[type="checkbox"] {
+      width: 14px; height: 14px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .cb-row label {
+      font-size: 12px;
+      color: var(--text-medium);
+      cursor: pointer;
+    }
+
+    /* Buttons */
+    .btn-row { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+    .btn {
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 9px 18px;
+      border: 1px solid transparent;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all .15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-primary {
+      background: var(--btn-pri-bg);
+      color: var(--btn-pri-text);
+      border-color: var(--btn-pri-bg);
+      flex: 1;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: var(--btn-pri-hover);
+      border-color: var(--btn-pri-hover);
+      box-shadow: 0 2px 8px rgba(74,85,104,.28);
+    }
+    .btn-secondary {
+      background: var(--bg);
+      color: var(--text-medium);
+      border-color: var(--border);
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: var(--bg-hover);
+      color: var(--text-dark);
+    }
+    .btn-accent {
+      background: transparent;
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+    .btn-accent:hover:not(:disabled) { background: var(--accent-dim); }
+
+    /* ── Right panel ─────────────────────────────── */
+    .panel-right {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg-alt);
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      padding: 8px 16px 0;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      gap: 2px;
+    }
+    .tab {
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 7px 18px;
+      border: none;
+      border-bottom: 2px solid transparent;
+      background: transparent;
+      color: var(--text-medium);
+      cursor: pointer;
+      transition: all .12s;
+      margin-bottom: -1px;
+    }
+    .tab:hover { color: var(--text-dark); }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* Error banner */
+    .error-banner {
+      display: none;
+      margin: 10px 14px 0;
+      padding: 9px 13px;
+      background: rgba(214,69,65,.07);
+      border: 1px solid rgba(214,69,65,.3);
+      border-radius: var(--radius);
+      font-size: 11px;
+      color: var(--danger);
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .error-banner.visible { display: block; }
+
+    /* Preview area */
+    .preview-area {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding: 16px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+    }
+    .preview-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      width: 100%;
+      height: 100%;
+      min-height: 280px;
+      color: var(--text-light);
+    }
+    .placeholder-icon { font-size: 44px; opacity: .25; }
+    .placeholder-text { font-size: 12px; color: var(--text-light); }
+
+    .spinner {
+      width: 30px; height: 30px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .75s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .svg-container {
+      max-width: 100%;
+      width: 100%;
+    }
+    .svg-container svg {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      border-radius: var(--radius);
+      box-shadow: 0 2px 14px rgba(0,0,0,.09);
+    }
+
+    /* Download bar */
+    .download-bar {
+      display: none;
+      padding: 9px 14px;
+      background: var(--bg-card);
+      border-top: 1px solid var(--border);
+      gap: 7px;
+      flex-shrink: 0;
+      align-items: center;
+    }
+    .download-bar.visible { display: flex; }
+    .dl-spacer { flex: 1; }
+
+    /* Responsive */
+    @media (max-width: 680px) {
+      .app-layout { flex-direction: column; }
+      .panel-left  { width: 100%; max-height: 48dvh; border-right: none; border-bottom: 1px solid var(--border); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== Header ===== -->
+  <header class="main-header">
+    <div class="header-brand">
+      <span class="brand-name">vector bodice</span>
+      <span class="brand-sub">pattern generator</span>
+    </div>
+    <div class="header-right">
+      <div class="status-pill">
+        <span class="status-dot loading" id="statusDot"></span>
+        <span id="statusLabel">loading…</span>
+      </div>
+      <button class="btn-theme" id="btnTheme" title="Toggle dark mode">◑</button>
+    </div>
+  </header>
+
+  <!-- ===== App layout ===== -->
+  <div class="app-layout">
+
+    <!-- Left: inputs -->
+    <div class="panel-left">
+      <div class="panel-scroll">
+
+        <div class="card">
+          <div class="card-header">
+            <h2>Measurements</h2>
+            <button class="btn btn-secondary btn-sm" id="btnRandom" title="Load a random size from the built-in test suite">⚄ random</button>
+          </div>
+          <p class="hint-text">All values in inches. Hover a label for guidance.<span id="sizeTag" class="size-tag"></span></p>
+          <div class="form-grid">
+
+            <div class="form-group">
+              <label for="inp-alpha" title="Circumference at the natural waist">Waist</label>
+              <input type="number" id="inp-alpha" value="28" step="0.25" min="18" max="60">
+            </div>
+            <div class="form-group">
+              <label for="inp-beta" title="Circumference at the fullest part of the bust">Bust</label>
+              <input type="number" id="inp-beta" value="36" step="0.25" min="24" max="72">
+            </div>
+
+            <div class="form-group">
+              <label for="inp-gamma" title="From base of neck (nape) down the back to the natural waist">Back nape → waist</label>
+              <input type="number" id="inp-gamma" value="15.5" step="0.25" min="10" max="26">
+            </div>
+            <div class="form-group">
+              <label for="inp-delta" title="Over the shoulder from base of neck to shoulder tip">Neck → shoulder</label>
+              <input type="number" id="inp-delta" value="5" step="0.25" min="2" max="10">
+            </div>
+
+            <div class="form-group">
+              <label for="inp-epsilon" title="Straight from shoulder tip to bust point (nipple level)">Shoulder → bust pt</label>
+              <input type="number" id="inp-epsilon" value="9" step="0.25" min="5" max="16">
+            </div>
+            <div class="form-group">
+              <label for="inp-zeta" title="Half the distance between bust points (nipple to nipple ÷ 2)">½ bust pt span</label>
+              <input type="number" id="inp-zeta" value="7" step="0.25" min="3" max="14">
+            </div>
+
+            <div class="form-group">
+              <label for="inp-eta" title="Width of the front body from side seam to center front, at bust level">Front width</label>
+              <input type="number" id="inp-eta" value="14" step="0.25" min="8" max="24">
+            </div>
+            <div class="form-group">
+              <label for="inp-theta" title="Width of the back body from side seam to center back, at bust level">Back width</label>
+              <input type="number" id="inp-theta" value="14" step="0.25" min="8" max="24">
+            </div>
+
+          </div>
+        </div><!-- /card measurements -->
+
+        <div class="card">
+          <h2>Options</h2>
+
+          <div class="form-group" style="margin-bottom:5px">
+            <label for="inp-seam">Seam allowance (in)</label>
+            <input type="number" id="inp-seam" value="0.75" step="0.125" min="0" max="2">
+          </div>
+          <div class="sa-presets" id="saPresets">
+            <button class="sa-pill" data-sa="0">none</button>
+            <button class="sa-pill" data-sa="0.375">⅜</button>
+            <button class="sa-pill" data-sa="0.5">½</button>
+            <button class="sa-pill" data-sa="0.625">⅝</button>
+            <button class="sa-pill active" data-sa="0.75">¾</button>
+            <button class="sa-pill" data-sa="1">1</button>
+            <button class="sa-pill" data-sa="1.25">1¼</button>
+          </div>
+
+          <hr class="form-divider">
+
+          <div class="cb-row">
+            <input type="checkbox" id="inp-fold">
+            <label for="inp-fold">On the fold (mirror front piece)</label>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn btn-primary" id="btnGenerate" disabled>Generate →</button>
+          </div>
+        </div><!-- /card options -->
+
+      </div><!-- /panel-scroll -->
+    </div><!-- /panel-left -->
+
+    <!-- Right: preview -->
+    <div class="panel-right">
+
+      <div class="tabs">
+        <button class="tab active" data-tab="front">Front</button>
+        <button class="tab" data-tab="back">Back</button>
+      </div>
+
+      <div class="error-banner" id="errorBanner"></div>
+
+      <div class="preview-area" id="previewArea">
+        <div class="preview-placeholder" id="previewPlaceholder">
+          <div class="spinner" id="loadingSpinner"></div>
+          <span class="placeholder-text" id="placeholderText">Loading Python runtime…</span>
+        </div>
+        <div class="svg-container" id="svgFront" style="display:none"></div>
+        <div class="svg-container" id="svgBack"  style="display:none"></div>
+      </div>
+
+      <div class="download-bar" id="downloadBar">
+        <button class="btn btn-accent" id="btnDlFront">↓ Front SVG</button>
+        <button class="btn btn-accent" id="btnDlBack">↓ Back SVG</button>
+        <span class="dl-spacer"></span>
+        <button class="btn btn-secondary" id="btnDlBoth">↓ Both</button>
+      </div>
+
+    </div><!-- /panel-right -->
+  </div><!-- /app-layout -->
+
+  <!-- Pyodide -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.27.3/full/pyodide.js"></script>
+  <script>
+    /* ── Theme ───────────────────────────────────────────────────────────── */
+    (function () {
+      const t = localStorage.getItem('vb-theme');
+      if (t === 'dark' || (!t && matchMedia('(prefers-color-scheme:dark)').matches))
+        document.documentElement.classList.add('dark');
+    })();
+    document.getElementById('btnTheme').addEventListener('click', () => {
+      const dark = document.documentElement.classList.toggle('dark');
+      localStorage.setItem('vb-theme', dark ? 'dark' : 'light');
+    });
+
+    /* ── State ───────────────────────────────────────────────────────────── */
+    let pyodide   = null;
+    let svgData   = { front: null, back: null };
+    let activeTab = 'front';
+
+    /* ── Helpers ─────────────────────────────────────────────────────────── */
+    function setStatus(label, state) {
+      document.getElementById('statusDot').className   = 'status-dot ' + state;
+      document.getElementById('statusLabel').textContent = label;
+    }
+
+    function showTab(tab) {
+      document.getElementById('svgFront').style.display = tab === 'front' ? 'block' : 'none';
+      document.getElementById('svgBack').style.display  = tab === 'back'  ? 'block' : 'none';
+    }
+
+    function downloadSVG(svgStr, filename) {
+      const blob = new Blob([svgStr], { type: 'image/svg+xml' });
+      const url  = URL.createObjectURL(blob);
+      const a    = Object.assign(document.createElement('a'), { href: url, download: filename });
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    /* ── Tabs ────────────────────────────────────────────────────────────── */
+    document.querySelectorAll('.tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeTab = btn.dataset.tab;
+        showTab(activeTab);
+      });
+    });
+
+    /* ── Seam allowance presets ──────────────────────────────────────────── */
+    const seam = document.getElementById('inp-seam');
+    document.getElementById('saPresets').addEventListener('click', e => {
+      const pill = e.target.closest('.sa-pill');
+      if (!pill) return;
+      seam.value = pill.dataset.sa;
+      document.querySelectorAll('.sa-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+    });
+    seam.addEventListener('input', () => {
+      document.querySelectorAll('.sa-pill').forEach(p =>
+        p.classList.toggle('active', p.dataset.sa === seam.value));
+    });
+
+    /* ── Pyodide init ────────────────────────────────────────────────────── */
+    async function initPyodide() {
+      setStatus('loading runtime…', 'loading');
+
+      pyodide = await loadPyodide({
+        indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.27.3/full/'
+      });
+
+      setStatus('loading numpy…', 'loading');
+      await pyodide.loadPackage('numpy');
+
+      setStatus('loading pattern library…', 'loading');
+      const [blockSrc, renderSrc] = await Promise.all([
+        fetch('./block.py').then(r  => {
+          if (!r.ok) throw new Error(`block.py fetch failed (${r.status})`);
+          return r.text();
+        }),
+        fetch('./render.py').then(r => {
+          if (!r.ok) throw new Error(`render.py fetch failed (${r.status})`);
+          return r.text();
+        }),
+      ]);
+
+      pyodide.FS.writeFile('/home/pyodide/block.py',  blockSrc);
+      pyodide.FS.writeFile('/home/pyodide/render.py', renderSrc);
+
+      await pyodide.runPythonAsync(`
+import sys
+sys.path.insert(0, '/home/pyodide')
+import block
+import render
+      `);
+
+      setStatus('ready', 'ready');
+      document.getElementById('btnGenerate').disabled = false;
+      document.getElementById('loadingSpinner').style.display  = 'none';
+      document.getElementById('placeholderText').textContent =
+        'Enter measurements and click Generate.';
+    }
+
+    /* ── Generate ────────────────────────────────────────────────────────── */
+    async function generate() {
+      const btn = document.getElementById('btnGenerate');
+      btn.disabled = true;
+      btn.textContent = 'Generating…';
+
+      const errorBanner = document.getElementById('errorBanner');
+      errorBanner.classList.remove('visible');
+
+      document.getElementById('previewPlaceholder').style.display = 'flex';
+      document.getElementById('loadingSpinner').style.display = 'block';
+      document.getElementById('placeholderText').textContent = 'Generating pattern…';
+      document.getElementById('svgFront').style.display = 'none';
+      document.getElementById('svgBack').style.display  = 'none';
+      document.getElementById('downloadBar').classList.remove('visible');
+      setStatus('generating…', 'loading');
+
+      try {
+        const vals = {
+          alpha:   parseFloat(document.getElementById('inp-alpha').value),
+          beta:    parseFloat(document.getElementById('inp-beta').value),
+          gamma:   parseFloat(document.getElementById('inp-gamma').value),
+          delta:   parseFloat(document.getElementById('inp-delta').value),
+          epsilon: parseFloat(document.getElementById('inp-epsilon').value),
+          zeta:    parseFloat(document.getElementById('inp-zeta').value),
+          eta:     parseFloat(document.getElementById('inp-eta').value),
+          theta:   parseFloat(document.getElementById('inp-theta').value),
+          seam:    parseFloat(document.getElementById('inp-seam').value || '0'),
+          fold:    document.getElementById('inp-fold').checked,
+        };
+
+        // Validate before sending to Python
+        const FIELD_LABELS = {
+          alpha: 'waist', beta: 'bust', gamma: 'back length', delta: 'neck–shoulder',
+          epsilon: 'shoulder–bust pt', zeta: '½ bust span', eta: 'front width', theta: 'back width',
+        };
+        for (const [k, v] of Object.entries(vals)) {
+          if (k !== 'fold' && (isNaN(v) || v < 0))
+            throw new Error(`Invalid value for ${FIELD_LABELS[k] || k}`);
+        }
+
+        const pyResult = await pyodide.runPythonAsync(`
+import json
+_r = render.render_svgs(
+    ${vals.alpha}, ${vals.beta}, ${vals.gamma}, ${vals.delta},
+    ${vals.epsilon}, ${vals.zeta}, ${vals.eta}, ${vals.theta},
+    fold=${vals.fold ? 'True' : 'False'},
+    seam_allowance=${vals.seam}
+)
+json.dumps(_r)
+        `);
+
+        const result = JSON.parse(pyResult);
+        svgData.front = result.front;
+        svgData.back  = result.back;
+
+        // Strip the Google Fonts @import from embedded SVG — the page already loads it
+        const clean = s => s.replace(/<style[^>]*>@import[^<]*<\/style>/gi, '');
+
+        document.getElementById('svgFront').innerHTML = clean(svgData.front);
+        document.getElementById('svgBack').innerHTML  = clean(svgData.back);
+
+        document.getElementById('previewPlaceholder').style.display = 'none';
+        document.getElementById('downloadBar').classList.add('visible');
+        showTab(activeTab);
+        setStatus('ready', 'ready');
+
+      } catch (err) {
+        errorBanner.textContent = '⚠ ' + (err.message || String(err));
+        errorBanner.classList.add('visible');
+        document.getElementById('loadingSpinner').style.display = 'none';
+        document.getElementById('placeholderText').textContent = 'Generation failed.';
+        setStatus('error', 'error');
+        console.error(err);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Generate →';
+      }
+    }
+
+    document.getElementById('btnGenerate').addEventListener('click', generate);
+
+    // Enter key in any input triggers generate
+    document.querySelectorAll('input[type="number"]').forEach(inp =>
+      inp.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !document.getElementById('btnGenerate').disabled)
+          generate();
+      })
+    );
+
+    /* ── Downloads ───────────────────────────────────────────────────────── */
+    function dlFilename(piece) {
+      const a = document.getElementById('inp-alpha').value;
+      const b = document.getElementById('inp-beta').value;
+      return `bodice_${a}x${b}_${piece}.svg`;
+    }
+    document.getElementById('btnDlFront').addEventListener('click', () => {
+      if (svgData.front) downloadSVG(svgData.front, dlFilename('front'));
+    });
+    document.getElementById('btnDlBack').addEventListener('click', () => {
+      if (svgData.back)  downloadSVG(svgData.back,  dlFilename('back'));
+    });
+    document.getElementById('btnDlBoth').addEventListener('click', () => {
+      if (svgData.front) downloadSVG(svgData.front, dlFilename('front'));
+      if (svgData.back)  setTimeout(() => downloadSVG(svgData.back, dlFilename('back')), 150);
+    });
+
+    /* ── Random size fill ─────────────────────────────────────────────────── */
+    const TEST_SIZES = [
+      { a:24, b:32, g:14.5,  d:4.5,  e:8.0,  z:6.5, n:12.5, t:12.5, label:'XS' },
+      { a:26, b:34, g:15.0,  d:4.75, e:8.5,  z:7.0, n:13.0, t:13.0, label:'S' },
+      { a:28, b:36, g:15.5,  d:5.0,  e:9.0,  z:7.0, n:14.0, t:14.0, label:'M' },
+      { a:30, b:38, g:16.0,  d:5.25, e:9.5,  z:7.5, n:14.5, t:14.5, label:'L' },
+      { a:32, b:40, g:16.0,  d:5.25, e:10.0, z:8.0, n:15.0, t:14.5, label:'XL' },
+      { a:34, b:42, g:16.5,  d:5.5,  e:10.5, z:8.5, n:15.5, t:15.0, label:'2XL' },
+      { a:25, b:33, g:13.5,  d:4.25, e:7.5,  z:6.5, n:12.5, t:12.5, label:'petite S' },
+      { a:27, b:35, g:17.5,  d:5.0,  e:9.0,  z:7.0, n:13.5, t:13.5, label:'tall S' },
+      { a:26, b:40, g:15.5,  d:5.0,  e:9.5,  z:7.5, n:14.5, t:14.0, label:'hourglass' },
+      { a:30, b:44, g:16.0,  d:5.25, e:10.5, z:9.0, n:15.5, t:15.0, label:'full bust' },
+    ];
+
+    let _lastRandIdx = -1;
+    function randomFill() {
+      let idx;
+      do { idx = Math.floor(Math.random() * TEST_SIZES.length); }
+      while (idx === _lastRandIdx && TEST_SIZES.length > 1);
+      _lastRandIdx = idx;
+      const s = TEST_SIZES[idx];
+      document.getElementById('inp-alpha').value   = s.a;
+      document.getElementById('inp-beta').value    = s.b;
+      document.getElementById('inp-gamma').value   = s.g;
+      document.getElementById('inp-delta').value   = s.d;
+      document.getElementById('inp-epsilon').value = s.e;
+      document.getElementById('inp-zeta').value    = s.z;
+      document.getElementById('inp-eta').value     = s.n;
+      document.getElementById('inp-theta').value   = s.t;
+      const tag = document.getElementById('sizeTag');
+      tag.textContent = s.label;
+      tag.classList.add('visible');
+    }
+    document.getElementById('btnRandom').addEventListener('click', randomFill);
+    // Clear size tag when user manually edits any measurement
+    document.querySelectorAll('#inp-alpha,#inp-beta,#inp-gamma,#inp-delta,#inp-epsilon,#inp-zeta,#inp-eta,#inp-theta')
+      .forEach(inp => inp.addEventListener('input', () =>
+        document.getElementById('sizeTag').classList.remove('visible')));
+
+    /* ── Boot ────────────────────────────────────────────────────────────── */
+    initPyodide().catch(err => {
+      setStatus('load failed', 'error');
+      document.getElementById('loadingSpinner').style.display = 'none';
+      document.getElementById('placeholderText').textContent =
+        'Failed to load Python runtime: ' + err.message;
+      console.error(err);
+    });
+  </script>
+</body>
+</html>

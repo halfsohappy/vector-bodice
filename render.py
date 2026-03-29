@@ -4,115 +4,113 @@ from block import build
 
 SCALE        = 96   # px per inch
 MARGIN       = 60   # px
-LABEL_OFFSET = 20   # px — inward push along bisector
+LABEL_OFFSET = 28   # px — inward push toward interior
 FONT_SIZE    = 11   # px
+FONT_FAMILY  = "'Martian Mono', monospace"
 
 
-def _offset_outline_outward(segments, distance, centroid):
-    """Compute a true parallel-offset outline for seam allowance.
+def _seam_runs(segments):
+    """Find consecutive runs of seam-eligible edges in a closed outline.
 
-    Per-edge distances:
-      - "line" and "cubic_curve" → full seam distance
-      - "dart" and "quadratic" (neck) → zero (the polygon bridges straight
-        across them so the seam allowance terminates cleanly at dart/neck edges)
+    Only plain "line" edges (not "dart", "quadratic", or "cubic_curve") receive
+    seam allowance.  Darts, neck curves, and armhole curves are treated as
+    no-seam gaps.  The outline is traversed as a closed polygon; runs that
+    cross the wrap-around join (e.g. back waist XX→GG→A) are detected and
+    returned as a single run.
 
-    At seam↔no-seam transitions the offset vertex lands on the perpendicular
-    of the adjacent seam edge, so the dashed outline is always a closed,
-    connected, consistently-wide path.
+    Returns a list of open polylines (each an np.array of model-space points).
     """
-    if distance < 1e-6:
-        return segments
-
-    centroid = np.asarray(centroid, float)
-    SEAM_TYPES = {"line", "cubic_curve"}
-
-    # ── Build flat edge list: (p0, p1, edge_dist) ────────────────────────────
-    edges = []
+    # Build flat (is_seam, p0, p1) edge list — curves collapsed to endpoints
+    flat = []
     for seg in segments:
-        seg_type = seg[0]
-        d = distance if seg_type in SEAM_TYPES else 0.0
-        if seg_type in ("line", "dart"):
-            edges.append((np.asarray(seg[1], float), np.asarray(seg[2], float), d))
-        elif seg_type == "quadratic":
-            _, p0, cp, p3 = seg
-            # neck: no seam — bridge straight from start to end at distance 0
-            edges.append((np.asarray(p0, float), np.asarray(p3, float), 0.0))
-        elif seg_type == "cubic_curve":
-            _, func, _p0, _p1 = seg
-            N = 20
-            pts_c = [np.asarray(func(t / N), float) for t in range(N + 1)]
-            for i in range(N):
-                edges.append((pts_c[i], pts_c[i + 1], d))
+        t = seg[0]
+        if t == "line":
+            flat.append((True,  np.asarray(seg[1], float), np.asarray(seg[2], float)))
+        elif t == "dart":
+            flat.append((False, np.asarray(seg[1], float), np.asarray(seg[2], float)))
+        elif t == "quadratic":
+            flat.append((False, np.asarray(seg[1], float), np.asarray(seg[3], float)))
+        elif t == "cubic_curve":
+            _, func, p0r, p1r = seg
+            flat.append((False, np.asarray(p0r, float), np.asarray(p1r, float)))
 
-    if not edges:
-        return segments
+    n = len(flat)
+    if not n:
+        return []
 
-    poly_pts   = np.array([e[0] for e in edges])   # poly_pts[i] = start of edge i
-    edge_dists = [e[2] for e in edges]              # edge_dists[i] = dist of edge i
-    n = len(poly_pts)
-    if n < 3:
-        return segments
+    # Find first no-seam edge; start traversal after it to avoid splitting
+    # a run that wraps around the polygon boundary
+    start = 0
+    for j in range(n):
+        if not flat[j][0]:
+            start = (j + 1) % n
+            break
+    else:
+        # Every edge is a seam — whole outline is one run
+        pts = [flat[0][1]] + [e[2] for e in flat]
+        return [np.array(pts)]
 
-    # ── Outward-normal helper ─────────────────────────────────────────────────
-    def outward_normal(ev, length, mid):
-        nv = np.array([-ev[1] / length, ev[0] / length])
+    runs, current = [], []
+    for step in range(n):
+        is_seam, p0, p1 = flat[(start + step) % n]
+        if is_seam:
+            if not current:
+                current = [p0.copy()]
+            current.append(p1.copy())
+        else:
+            if current:
+                runs.append(np.array(current))
+                current = []
+    if current:
+        runs.append(np.array(current))
+    return runs
+
+
+def _offset_open_polyline(pts, distance, centroid):
+    """Outward parallel offset of an open polyline.
+
+    Interior vertices use a miter bisector (capped at MITER_LIMIT).
+    Endpoint vertices use the perpendicular of their single adjacent edge.
+    Returns an np.array of offset points, same count as *pts*.
+    """
+    centroid = np.asarray(centroid, float)
+    n = len(pts)
+    MITER_LIMIT = 4.0
+
+    def _out_normal(ev, le, mid):
+        nv = np.array([-ev[1] / le, ev[0] / le])
         if np.linalg.norm(mid + nv - centroid) < np.linalg.norm(mid - centroid):
             nv = -nv
         return nv
 
-    # ── Per-vertex offset ─────────────────────────────────────────────────────
-    MITER_LIMIT = 4.0
-    offset_pts = []
-
+    offset = []
     for i in range(n):
-        p_prev = poly_pts[(i - 1) % n]
-        p_curr = poly_pts[i]
-        p_next = poly_pts[(i + 1) % n]
-        d_in   = edge_dists[(i - 1) % n]   # dist of incoming edge
-        d_out  = edge_dists[i]             # dist of outgoing edge
-
-        if d_in < 1e-8 and d_out < 1e-8:
-            # Both edges have no seam — vertex stays put
-            offset_pts.append(p_curr)
-            continue
-
-        e_in  = p_curr - p_prev
-        e_out = p_next - p_curr
-        li = np.linalg.norm(e_in)
-        lo = np.linalg.norm(e_out)
-
-        if d_out < 1e-8:
-            # Seam → no-seam: plant offset on perpendicular of incoming seam edge
-            off = (p_curr + outward_normal(e_in, li, (p_prev + p_curr) / 2) * d_in
-                   if li > 1e-8 else p_curr)
-            offset_pts.append(off)
-
-        elif d_in < 1e-8:
-            # No-seam → seam: plant offset on perpendicular of outgoing seam edge
-            off = (p_curr + outward_normal(e_out, lo, (p_curr + p_next) / 2) * d_out
-                   if lo > 1e-8 else p_curr)
-            offset_pts.append(off)
-
+        p = pts[i]
+        if i == 0:
+            e = pts[1] - pts[0]; le = np.linalg.norm(e)
+            offset.append(p + _out_normal(e, le, (pts[0]+pts[1])/2) * distance
+                          if le > 1e-8 else p.copy())
+        elif i == n - 1:
+            e = pts[-1] - pts[-2]; le = np.linalg.norm(e)
+            offset.append(p + _out_normal(e, le, (pts[-2]+pts[-1])/2) * distance
+                          if le > 1e-8 else p.copy())
         else:
-            # Both edges have seam: standard miter bisector
+            e_in = pts[i] - pts[i-1]; li = np.linalg.norm(e_in)
+            e_out = pts[i+1] - pts[i]; lo = np.linalg.norm(e_out)
             if li < 1e-8 or lo < 1e-8:
-                v = p_curr - centroid; vl = np.linalg.norm(v)
-                offset_pts.append(p_curr + (v / vl if vl > 1e-8 else np.array([1., 0.])) * d_in)
+                v = p - centroid; vl = np.linalg.norm(v)
+                offset.append(p + (v/vl if vl > 1e-8 else np.array([1.,0.])) * distance)
                 continue
-            ni = outward_normal(e_in,  li, (p_prev + p_curr) / 2)
-            no = outward_normal(e_out, lo, (p_curr + p_next) / 2)
-            bisector = ni + no
-            b_len = np.linalg.norm(bisector)
-            if b_len < 1e-8:
-                offset_pts.append(p_curr + ni * d_in)
+            ni = _out_normal(e_in,  li, (pts[i-1]+pts[i])/2)
+            no = _out_normal(e_out, lo, (pts[i]+pts[i+1])/2)
+            bis = ni + no; bl = np.linalg.norm(bis)
+            if bl < 1e-8:
+                offset.append(p + ni * distance)
                 continue
-            bisector /= b_len
-            sin_half = max(np.dot(bisector, ni), 1.0 / MITER_LIMIT)
-            offset_pts.append(p_curr + bisector * (d_in / sin_half))
-
-    offset_pts = np.array(offset_pts)
-    return [("line", offset_pts[i], offset_pts[(i + 1) % len(offset_pts)])
-            for i in range(len(offset_pts))]
+            bis /= bl
+            sin_h = max(np.dot(bis, ni), 1.0 / MITER_LIMIT)
+            offset.append(p + bis * (distance / sin_h))
+    return np.array(offset)
 
 
 def _mirror_point(pt, fold_line_x):
@@ -302,6 +300,11 @@ def _inward_dir(pt, outline, centroid_model):
 
     c = np.asarray(centroid_model, float)
 
+    # Centroid direction — always reliably inward
+    diff = c - pt
+    cdn = np.linalg.norm(diff)
+    centroid_dir = diff / cdn if cdn > 1e-8 else np.array([1.0, 0.0])
+
     if prev_n is not None and next_n is not None:
         v1 = np.asarray(prev_n, float) - pt
         v2 = np.asarray(next_n, float) - pt
@@ -313,22 +316,13 @@ def _inward_dir(pt, outline, centroid_model):
                 b /= nb
                 if np.dot(b, c - pt) < 0:
                     b = -b
-                # Ensure minimum inward component: if point is near vertical edge,
-                # boost horizontal component toward centroid
-                centroid_dir = c - pt
-                if np.linalg.norm(centroid_dir) > 1e-8:
-                    centroid_dir = centroid_dir / np.linalg.norm(centroid_dir)
-                    # Blend with centroid direction if inward component is weak
-                    inward_component = np.dot(b, centroid_dir)
-                    if inward_component < 0.3:  # weak inward pointing
-                        b = 0.5 * b + 0.5 * centroid_dir
-                        b = b / np.linalg.norm(b)
+                # Always blend 35% bisector + 65% centroid direction so that
+                # concave corners (like O and V) are pushed reliably inward.
+                b = 0.35 * b + 0.65 * centroid_dir
+                b /= np.linalg.norm(b)
                 return b
 
-    # fallback: centroid direction
-    diff = c - pt
-    n = np.linalg.norm(diff)
-    return diff / n if n > 1e-8 else np.array([1.0, 0.0])
+    return centroid_dir
 
 
 def _label_elements(convert, outline, centroid_model, name, pt, filled):
@@ -352,7 +346,7 @@ def _label_elements(convert, outline, centroid_model, name, pt, filled):
         color = "#888"
 
     text = (f'  <text x="{sx+dx:.1f}" y="{sy+dy:.1f}"'
-            f'        font-family="monospace" font-size="{FONT_SIZE}"'
+            f'        font-family="{FONT_FAMILY}" font-size="{FONT_SIZE}"'
             f'        fill="{color}" font-weight="bold"'
             f'        text-anchor="middle" dominant-baseline="middle">{name}</text>')
     return [dot], [text]
@@ -360,26 +354,25 @@ def _label_elements(convert, outline, centroid_model, name, pt, filled):
 
 def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
                outline_labels, interior_labels, seam_allowance=0):
-    # Create seam allowance outline if specified
-    seam_outline = None
-    if seam_allowance > 0:
-        centroid_temp = _sample_outline(outline).mean(axis=0)
-        seam_outline = _offset_outline_outward(outline, seam_allowance, centroid_temp)
-    
-    # bounding box: outline control pts + seam allowance + construction lines + dart lines + all label pts
-    bbox_segs = [outline]
-    if seam_outline:
-        bbox_segs.append(seam_outline)
-    
+    # Compute seam allowance runs (open polylines) in model space for bbox
+    centroid_temp = _sample_outline(outline).mean(axis=0)
+    seam_offset_runs = []   # list of np.array (model-space offset polyline per run)
+    if seam_allowance > 1e-6:
+        for run in _seam_runs(outline):
+            seam_offset_runs.append(
+                _offset_open_polyline(run, seam_allowance, centroid_temp)
+            )
+
+    # bounding box: outline + seam offset pts + construction/dart/label pts
     extra = (  [p for seg in construction_lines for p in seg]
              + [p for seg in dart_lines         for p in seg]
              + list(outline_labels.values())
              + list(interior_labels.values()) )
-    
-    all_pts = np.vstack(
-        [_sample_bbox(seg_list) for seg_list in bbox_segs] + 
-        [np.atleast_2d(p) for p in extra]
-    )
+
+    all_pt_arrays = ([_sample_bbox(outline)]
+                     + seam_offset_runs
+                     + [np.atleast_2d(p) for p in extra])
+    all_pts = np.vstack(all_pt_arrays)
 
     convert, w, h  = _make_converter(all_pts)
     centroid_model = _sample_outline(outline).mean(axis=0)        # model space
@@ -394,17 +387,22 @@ def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
         f'     viewBox="0 0 {w:.0f} {h:.0f}">',
         '  <rect width="100%" height="100%" fill="white"/>',
         '  <defs>',
+        '    <style>@import url(\'https://fonts.googleapis.com/css2?family=Martian+Mono:wght@400;700\u0026display=swap\');</style>',
         f'    <clipPath id="{clip_id}">',
         f'      <path d="{path_d}"/>',
         '    </clipPath>',
         '  </defs>',
     ]
     
-    # seam allowance (if present) — drawn as single closed dashed outline
-    if seam_outline:
-        seam_allow_path_d = _outline_to_svg_path(seam_outline, convert)
-        lines.append(f'  <path d="{seam_allow_path_d}" fill="none" stroke="{stroke}"'
-                     f'        stroke-width="0.75" stroke-dasharray="2 2" opacity="0.5"/>')
+    # seam allowance — one open dashed path per seam run
+    for off_pts in seam_offset_runs:
+        svg_pts = convert(off_pts)
+        d_parts = [f"M {svg_pts[0,0]:.2f},{svg_pts[0,1]:.2f}"]
+        for sp in svg_pts[1:]:
+            d_parts.append(f"L {sp[0]:.2f},{sp[1]:.2f}")
+        lines.append(f'  <path d="{" ".join(d_parts)}" fill="none" stroke="{stroke}"'
+                     f'        stroke-width="1.5" stroke-dasharray="2 2" opacity="0.5"'
+                     f'        stroke-linecap="round"/>')
     
     lines += [
         # bodice fill
@@ -417,7 +415,7 @@ def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
         x1, y1 = convert(p1)[0]
         lines.append(
             f'    <line x1="{x0:.1f}" y1="{y0:.1f}" x2="{x1:.1f}" y2="{y1:.1f}"'
-            f'          stroke="#aaa" stroke-width="0.75" stroke-dasharray="4 3"/>'
+            f'          stroke="#aaa" stroke-width="1.5" stroke-dasharray="4 3"/>'
         )
     lines.append('  </g>')
 
@@ -428,7 +426,7 @@ def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
         x1, y1 = convert(p1)[0]
         lines.append(
             f'    <line x1="{x0:.1f}" y1="{y0:.1f}" x2="{x1:.1f}" y2="{y1:.1f}"'
-            f'          stroke="#bbb" stroke-width="0.75" stroke-dasharray="4 3"/>'
+            f'          stroke="#bbb" stroke-width="1.5" stroke-dasharray="4 3"/>'
         )
     lines.append('  </g>')
 
@@ -447,6 +445,9 @@ def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
         [(name, pt, True)  for name, pt in outline_labels.items()]
     )
 
+    # Both dots and text rendered inside the clip group so labels never
+    # appear outside the bodice outline.  The centroid-blend in _inward_dir
+    # ensures text centres are placed well inward and won't be cropped.
     lines.append(f'  <g clip-path="url(#{clip_id})">')
     for name, pt, filled in all_label_items:
         dot, text = _label_elements(convert, outline, centroid_model, name, pt, filled)
@@ -456,9 +457,82 @@ def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
     lines.append('  </g>')
     lines.append('</svg>')
 
+    svg_string = "\n".join(lines)
+    if path is None:
+        return svg_string
     with open(path, "w") as f:
-        f.write("\n".join(lines))
+        f.write(svg_string)
     print(f"Saved {path}  ({w:.0f} × {h:.0f} px)")
+
+
+def render_svgs(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
+               fold=False, seam_allowance=0.75):
+    """Return {'front': svg_str, 'back': svg_str}.  Used by the web interface."""
+    bk = build(alpha, beta, gamma, delta, epsilon, zeta, eta, theta)
+
+    ab_length = np.linalg.norm(bk.B - bk.A)
+    center_back_seam_allow = seam_allowance if ab_length >= 1.0 else 0
+
+    shared_interior = {
+        "B":  bk.B,  "C":  bk.C,
+        "E":  bk.E,  "F":  bk.F,  "G":  bk.G,
+        "H":  bk.H,  "I":  bk.I,  "J":  bk.J,
+        "R":  bk.R,
+        "U":  bk.U,  "EE": bk.EE, "CC": bk.CC,
+    }
+
+    front_outline = bk.front_bodice
+    front_labels = {
+        "D":  bk.D,  "M":  bk.M,  "K":  bk.K,  "N":  bk.N,
+        "P":  bk.P,  "O":  bk.O,  "Q":  bk.Q,
+        "T":  bk.T,  "V":  bk.V,  "W":  bk.W,
+        "UU": bk.UU, "VV": bk.VV, "WW": bk.WW,
+        "S":  bk.S,
+    }
+
+    if fold:
+        fold_line_x = bk.M[0]
+        front_outline = _fold_front_bodice(bk.front_bodice, fold_line_x)
+        front_labels = {
+            "M":  bk.M,  "D":  bk.D,
+            "K":  bk.K,  "N":  bk.N,
+            "P":  bk.P,  "O":  bk.O,  "Q":  bk.Q,
+            "T":  bk.T,  "V":  bk.V,  "W":  bk.W,
+            "UU": bk.UU, "VV": bk.VV, "WW": bk.WW,
+            "S":  bk.S,
+        }
+        for name, pt in list(front_labels.items()):
+            pt_arr = np.asarray(pt, float)
+            if abs(pt_arr[0] - fold_line_x) > 1e-4:
+                front_labels[name + "'"] = _mirror_point(pt_arr, fold_line_x)
+
+    back_svg = _write_svg(
+        None,
+        bk.back_bodice,
+        construction_lines=bk.construction_lines,
+        dart_lines=bk.back_dart_lines,
+        fill="#dce8f5", stroke="#2255aa",
+        outline_labels={
+            "A":  bk.A,  "GG": bk.GG, "AA": bk.AA, "DD": bk.DD,
+            "BB": bk.BB, "O":  bk.O,  "FF": bk.FF,
+            "XX": bk.XX, "YY": bk.YY, "ZZ": bk.ZZ,
+        },
+        interior_labels=shared_interior,
+        seam_allowance=center_back_seam_allow,
+    )
+
+    front_svg = _write_svg(
+        None,
+        front_outline,
+        construction_lines=bk.construction_lines,
+        dart_lines=bk.front_dart_lines,
+        fill="#fdeede", stroke="#aa5522",
+        outline_labels=front_labels,
+        interior_labels=shared_interior,
+        seam_allowance=seam_allowance,
+    )
+
+    return {'front': front_svg, 'back': back_svg}
 
 
 def render(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
@@ -552,7 +626,7 @@ if __name__ == "__main__":
     parser.add_argument("--theta",   type=float, required=True, help="back width")
     parser.add_argument("--prefix",  type=str,   default="bodice", help="output filename prefix")
     parser.add_argument("--fold",    action="store_true", help="render front bodice on fold (mirrored, full width)")
-    parser.add_argument("--seam-allowance", type=float, default=0.75, help="seam allowance in inches (default 0.75)")
+    parser.add_argument("--seam-allowance", type=float, default=0.5, help="seam allowance in inches (default 0.75)")
     args = parser.parse_args()
 
     render(
