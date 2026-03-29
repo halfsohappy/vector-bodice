@@ -68,11 +68,11 @@ def curve_neck(K, M, t):
     return cubic_bezier(K, P1, P2, M, t)
 
 def curve_armhole_upper(K, N, P, t):
-    """Front upper armhole: N → P with shoulder continuation → vertical tangent at P."""
-    shoulder_dir = (N - K) / np.linalg.norm(N - K)
+    """Front upper armhole: N → P with corner at N → vertical tangent at P."""
+    start_dir = (P - N) / np.linalg.norm(P - N)
     tangent_P = np.array([0.0, -1.0])
     chord_len = np.linalg.norm(P - N)
-    P1 = N + (1.0/3.0) * chord_len * shoulder_dir
+    P1 = N + (1.0/3.0) * chord_len * start_dir
     P2 = P - (1.0/3.0) * chord_len * tangent_P
     return cubic_bezier(N, P1, P2, P, t)
 
@@ -94,11 +94,11 @@ def curve_back_neck(A, AA, DD, t):
     return cubic_bezier(A, P1, P2, AA, t)
 
 def curve_back_armhole_upper(AA, DD, BB, t):
-    """Back upper armhole: DD → BB with shoulder continuation → vertical tangent at BB."""
-    shoulder_dir = (DD - AA) / np.linalg.norm(DD - AA)
+    """Back upper armhole: DD → BB with corner at DD → vertical tangent at BB."""
+    start_dir = (BB - DD) / np.linalg.norm(BB - DD)
     tangent_BB = np.array([0.0, -1.0])
     chord_len = np.linalg.norm(BB - DD)
-    P1 = DD + (1.0/3.0) * chord_len * shoulder_dir
+    P1 = DD + (1.0/3.0) * chord_len * start_dir
     P2 = BB - (1.0/3.0) * chord_len * tangent_BB
     return cubic_bezier(DD, P1, P2, BB, t)
 
