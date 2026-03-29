@@ -4,9 +4,62 @@ from block import build
 
 SCALE         = 300          # px per inch (300 DPI)
 MARGIN_INCHES = 0.5          # half-inch whitespace border around bodice
-LABEL_OFFSET  = 87           # px — inward push toward interior
+LABEL_OFFSET  = 87           # px — fallback inward push toward interior
 FONT_SIZE     = 34           # px
 FONT_FAMILY   = "monospace"
+
+# ── Per-label offset tables ───────────────────────────────────────────────────
+# All values in model-space inches (dx rightward, dy upward).
+# SVG y is flipped in _label_elements, so dy upward → negative SVG dy.
+# Back and front use separate tables because shared points (e.g. O) sit on
+# opposite sides of their respective pieces.
+
+_BACK_LABEL_OFFSETS = {
+    "A":   ( 0.50, -0.25),  # nape: top-left corner → right, slightly down
+    "GG":  ( 0.50,  0.40),  # bottom-left corner → right and up
+    "AA":  ( 0.50, -0.55),  # above nape, neck RHS → right and strongly down
+    "DD":  (-0.35, -0.50),  # shoulder tip (upper right) → left and down
+    "BB":  (-0.45,  0.15),  # upper armhole (right side) → left
+    "O":   (-0.45, -0.15),  # side seam top (right side) → left and slightly down
+    "FF":  (-0.45,  0.40),  # side seam bottom → left and up
+    "XX":  (-0.30,  0.42),  # back dart left base → left and up
+    "YY":  ( 0.30,  0.42),  # back dart right base → right and up
+    "ZZ":  ( 0.45,  0.00),  # dart tip (interior) → right
+}
+
+_FRONT_LABEL_OFFSETS = {
+    "M":   (-0.45, -0.35),  # CF neck corner (top-right) → left and down
+    "D":   (-0.45,  0.38),  # CF waist corner (bottom-right) → left and up
+    "K":   ( 0.00, -1.00),  # front neck: drop 1" below neck/shoulder junction
+    "N":   ( 0.45, -0.45),  # shoulder tip → right and down
+    "P":   ( 0.40, -0.35),  # lower armhole transition → right and down
+    "O":   ( 0.45, -0.15),  # side seam top (left side) → right and slightly down
+    "Q":   ( 0.45,  0.38),  # side seam base (bottom-left) → right and up
+    "V":   ( 0.45,  0.00),  # bust dart lower (side seam) → right
+    "T":   (-0.35, -0.45),  # bust dart upper (near CF) → left and down
+    # "UU" is omitted — offset computed dynamically per render (dart geometry varies with size)
+    "VV":  (-0.45,  0.38),  # waist dart left base → LEFT clear of dart notch
+    "WW":  ( 0.45,  0.38),  # waist dart right base → RIGHT clear of dart notch
+    "W":   (-0.45,  0.00),  # waist dart tip → left toward side seam
+    "S":   ( 0.40,  0.00),  # bust point (interior) → right toward CF
+}
+
+_INTERIOR_LABEL_OFFSETS = {
+    # Construction-rectangle reference points. Offsets chosen so text lands
+    # inside whichever piece the dot appears in.
+    "B":   ( 0.40,  0.35),  # bottom-left corner → right and up
+    "C":   (-0.40, -0.35),  # top-right corner → left and down
+    "E":   (-0.35, -0.40),  # top of vertical centerline → left and down
+    "F":   ( 0.35,  0.40),  # bottom of vertical centerline → right and up
+    "G":   ( 0.40,  0.00),  # left of upper horizontal → right
+    "H":   (-0.40,  0.00),  # right of upper horizontal → left
+    "I":   ( 0.40,  0.00),  # left of middle horizontal → right
+    "J":   (-0.40,  0.00),  # right of middle horizontal → left
+    "R":   ( 0.40, -0.25),  # shoulder midpoint → right and slightly down
+    "U":   ( 0.40,  0.00),  # bust dart apex → right
+    "EE":  ( 0.40,  0.35),  # waist curve reference → right and up
+    "CC":  (-0.40, -0.35),  # armhole reference (above BB) → left and down
+}
 
 
 def _seam_runs(segments):
@@ -335,7 +388,8 @@ def _inward_dir(pt, outline, centroid_model):
     return centroid_dir
 
 
-def _label_elements(convert, outline, centroid_model, name, pt, filled):
+def _label_elements(convert, outline, centroid_model, name, pt, filled,
+                    label_offsets=None):
     """Return (dot_lines, text_lines) for one labeled point.
     Dots go inside the clip group; text goes outside so it is never cut off.
     filled=True  → solid black dot, dark text  (outline point)
@@ -343,9 +397,18 @@ def _label_elements(convert, outline, centroid_model, name, pt, filled):
     """
     sx, sy = convert(np.array([pt]))[0]
 
-    d = _inward_dir(pt, outline, centroid_model)
-    # model space is y-up; SVG is y-down — flip the y component
-    dx, dy = d[0] * LABEL_OFFSET, -d[1] * LABEL_OFFSET
+    # Resolve offset: use hardcoded table when available, else centroid direction.
+    base   = name.rstrip("'")
+    primes = len(name) - len(base)
+    if label_offsets is not None and base in label_offsets:
+        dx_in, dy_in = label_offsets[base]
+        if primes % 2 == 1:
+            dx_in = -dx_in          # mirror x for fold-primed labels
+        dx =  dx_in * SCALE
+        dy = -dy_in * SCALE         # model y-up → SVG y-down
+    else:
+        d = _inward_dir(pt, outline, centroid_model)
+        dx, dy = d[0] * LABEL_OFFSET, -d[1] * LABEL_OFFSET
 
     if filled:
         dot   = f'    <circle cx="{sx:.1f}" cy="{sy:.1f}" r="8" fill="black"/>'
@@ -364,7 +427,7 @@ def _label_elements(convert, outline, centroid_model, name, pt, filled):
 
 def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
                outline_labels, interior_labels, seam_allowance=0,
-               seam_allowance_fn=None):
+               seam_allowance_fn=None, label_offsets=None):
     # Compute seam allowance runs (open polylines) in model space for bbox.
     # seam_allowance_fn, if provided, takes a run (np.array of points) and returns
     # the SA for that run, allowing per-run overrides.
@@ -456,7 +519,8 @@ def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
     all_dots  = []
     all_texts = []
     for name, pt, filled in all_label_items:
-        dot, text = _label_elements(convert, outline, centroid_model, name, pt, filled)
+        dot, text = _label_elements(convert, outline, centroid_model, name, pt, filled,
+                                     label_offsets)
         all_dots.append(dot)
         if filled:
             all_texts.append(text)
@@ -541,6 +605,7 @@ def render_svgs(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
         interior_labels=shared_interior,
         seam_allowance=seam_allowance,
         seam_allowance_fn=_back_sa_fn,
+        label_offsets={**_INTERIOR_LABEL_OFFSETS, **_BACK_LABEL_OFFSETS},
     )
 
     front_svg, front_w, front_h = _write_svg(
@@ -552,6 +617,8 @@ def render_svgs(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
         outline_labels=front_labels,
         interior_labels=shared_interior,
         seam_allowance=seam_allowance,
+        label_offsets={**_INTERIOR_LABEL_OFFSETS, **_FRONT_LABEL_OFFSETS,
+                       "UU": (0.10, (bk.T[1] + bk.O[1]) / 2 - bk.UU[1])},
     )
 
     return {
@@ -633,6 +700,7 @@ def render(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
         interior_labels=shared_interior,
         seam_allowance=seam_allowance,
         seam_allowance_fn=_back_sa_fn,
+        label_offsets={**_INTERIOR_LABEL_OFFSETS, **_BACK_LABEL_OFFSETS},
     )
 
     _write_svg(
@@ -644,6 +712,8 @@ def render(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
         outline_labels=front_labels,
         interior_labels=shared_interior,
         seam_allowance=seam_allowance,
+        label_offsets={**_INTERIOR_LABEL_OFFSETS, **_FRONT_LABEL_OFFSETS,
+                       "UU": (0.10, (bk.T[1] + bk.O[1]) / 2 - bk.UU[1])},
     )
 
 
