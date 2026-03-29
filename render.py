@@ -15,33 +15,33 @@ FONT_FAMILY   = "monospace"
 # opposite sides of their respective pieces.
 
 _BACK_LABEL_OFFSETS = {
-    "A":   ( 0.50, -0.25),  # nape: top-left corner → right, slightly down
-    "GG":  ( 0.50,  0.40),  # bottom-left corner → right and up
-    "AA":  ( 0.50, -0.55),  # above nape, neck RHS → right and strongly down
-    "DD":  (-0.87, -0.50),  # shoulder tip (upper right) → left and down (210°)
-    "BB":  (-0.45,  0.15),  # upper armhole (right side) → left
-    "O":   (-0.77, -0.64),  # side seam top (right side) → left/down (220°)
-    "FF":  (-0.45,  0.40),  # side seam bottom → left and up
-    "XX":  (-0.30,  0.42),  # back dart left base → left and up
-    "YY":  ( 0.30,  0.42),  # back dart right base → right and up
-    "ZZ":  ( 0.45,  0.00),  # dart tip (interior) → right
+    "A":   ( 0.71, -0.71),  # nape (315°)
+    "GG":  ( 0.71,  0.71),  # bottom-left corner (45°)
+    "AA":  ( 0.42, -0.91),  # above nape, neck RHS (295°)
+    "DD":  (-0.87, -0.50),  # shoulder tip (210°)
+    "BB":  (-1.00,  0.00),  # upper armhole (180°)
+    "O":   (-0.77, -0.64),  # side seam top (220°)
+    "FF":  (-0.64,  0.77),  # side seam bottom (130°)
+    "XX":  (-0.71,  0.71),  # back dart left base (135°)
+    "YY":  ( 0.71,  0.71),  # back dart right base (45°)
+    "ZZ":  ( 0.45,  0.00),  # dart tip → right (already optimal)
 }
 
 _FRONT_LABEL_OFFSETS = {
-    "M":   (-0.45, -0.35),  # CF neck corner (top-right) → left and down
-    "D":   (-0.45,  0.38),  # CF waist corner (bottom-right) → left and up
-    "K":   (-0.57, -0.82),  # front neck: left and strongly down into neck curve (235°)
-    "N":   ( 0.45, -0.45),  # shoulder tip → right and down
-    "P":   ( 0.40, -0.35),  # lower armhole transition → right and down
-    "O":   ( 0.71, -0.71),  # side seam top (left side) → right/down (315°)
-    "Q":   ( 0.45,  0.38),  # side seam base (bottom-left) → right and up
-    "V":   ( 0.87, -0.50),  # bust dart lower (side seam) → right and slightly down (330°)
-    "T":   (-0.35, -0.45),  # bust dart upper (near CF) → left and down
-    "UU":  ( 0.64,  0.77),  # bust dart upper base → right and up (50°, tightened per render)
-    "VV":  (-0.45,  0.38),  # waist dart left base → LEFT clear of dart notch
-    "WW":  ( 0.45,  0.38),  # waist dart right base → RIGHT clear of dart notch
-    "W":   (-0.45,  0.00),  # waist dart tip → left toward side seam
-    "S":   ( 0.40,  0.00),  # bust point (interior) → right toward CF
+    "M":   (-0.71, -0.71),  # CF neck corner (225°)
+    "D":   (-0.45,  0.38),  # CF waist corner (already optimal)
+    "K":   (-0.57, -0.82),  # front neck curve (235°)
+    "N":   ( 0.91, -0.42),  # shoulder tip (335°)
+    "P":   ( 1.00,  0.00),  # lower armhole transition (0°)
+    "O":   ( 0.71, -0.71),  # side seam top (315°)
+    "Q":   ( 0.64,  0.77),  # side seam base (50°)
+    "V":   ( 0.87, -0.50),  # bust dart lower (330°)
+    "T":   ( 0.87,  0.50),  # bust dart upper (30°)
+    "UU":  ( 0.64,  0.77),  # bust dart upper base (50°)
+    "VV":  (-0.64,  0.77),  # waist dart left base (130°)
+    "WW":  ( 0.64,  0.77),  # waist dart right base (50°)
+    "W":   (-0.45,  0.00),  # waist dart tip (already optimal)
+    "S":   ( 0.40,  0.00),  # bust point (already optimal)
 }
 
 _INTERIOR_LABEL_OFFSETS = {
