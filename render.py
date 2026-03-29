@@ -6,7 +6,7 @@ SCALE         = 300          # px per inch (300 DPI)
 MARGIN_INCHES = 0.5          # half-inch whitespace border around bodice
 LABEL_OFFSET  = 87           # px — inward push toward interior
 FONT_SIZE     = 34           # px
-FONT_FAMILY   = "'Martian Mono', monospace"
+FONT_FAMILY   = "monospace"
 
 
 def _seam_runs(segments):
@@ -391,7 +391,6 @@ def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
         f'     viewBox="0 0 {w:.0f} {h:.0f}">',
         '  <rect width="100%" height="100%" fill="white"/>',
         '  <defs>',
-        '    <style>@import url(\'https://fonts.googleapis.com/css2?family=Martian+Mono:wght@400;700\u0026display=swap\');</style>',
         f'    <clipPath id="{clip_id}">',
         f'      <path d="{path_d}"/>',
         '    </clipPath>',
