@@ -363,14 +363,18 @@ def _label_elements(convert, outline, centroid_model, name, pt, filled):
 
 
 def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
-               outline_labels, interior_labels, seam_allowance=0):
-    # Compute seam allowance runs (open polylines) in model space for bbox
+               outline_labels, interior_labels, seam_allowance=0,
+               seam_allowance_fn=None):
+    # Compute seam allowance runs (open polylines) in model space for bbox.
+    # seam_allowance_fn, if provided, takes a run (np.array of points) and returns
+    # the SA for that run, allowing per-run overrides.
     centroid_temp = _sample_outline(outline).mean(axis=0)
     seam_offset_runs = []   # list of np.array (model-space offset polyline per run)
-    if seam_allowance > 1e-6:
-        for run in _seam_runs(outline):
+    for run in _seam_runs(outline):
+        sa = seam_allowance_fn(run) if seam_allowance_fn is not None else seam_allowance
+        if sa > 1e-6:
             seam_offset_runs.append(
-                _offset_open_polyline(run, seam_allowance, centroid_temp)
+                _offset_open_polyline(run, sa, centroid_temp)
             )
 
     # bounding box: outline + seam offset only.
@@ -480,8 +484,14 @@ def render_svgs(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
     bk = build(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
                deepen_bust_dart=deepen_bust_dart)
 
-    ab_length = np.linalg.norm(bk.B - bk.A)
-    center_back_seam_allow = seam_allowance if ab_length >= 1.0 else 0
+    # A→GG (center back seam) must never have SA between 0 and 1 exclusive.
+    center_back_sa = 0.0 if seam_allowance == 0 else max(seam_allowance, 1.0)
+    a_pt = bk.A
+    def _back_sa_fn(run):
+        # The center-back run [XX, GG, A] ends at A
+        if np.allclose(run[-1], a_pt, atol=1e-4):
+            return center_back_sa
+        return seam_allowance
 
     shared_interior = {
         "B":  bk.B,  "C":  bk.C,
@@ -528,7 +538,8 @@ def render_svgs(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
             "XX": bk.XX, "YY": bk.YY, "ZZ": bk.ZZ,
         },
         interior_labels=shared_interior,
-        seam_allowance=center_back_seam_allow,
+        seam_allowance=seam_allowance,
+        seam_allowance_fn=_back_sa_fn,
     )
 
     front_svg, front_w, front_h = _write_svg(
@@ -555,18 +566,22 @@ def render(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
     
     Args:
         fold: If True, mirror front bodice on the M-D line to show full width
-        seam_allowance: Seam allowance in inches (default 0.75). Special handling:
-                       if the center-back seam (A-B line) is shorter than 1 inch,
-                       seam_allowance is set to 0 for that edge to avoid bunching.
+        seam_allowance: Seam allowance in inches (default 0.75). The A→GG
+                       (center back) seam receives max(seam_allowance, 1.0),
+                       except when seam_allowance is exactly 0.
         deepen_bust_dart: If True, add 0.5" to the bust dart depth from Chart 1.
     """
     bk = build(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
                deepen_bust_dart=deepen_bust_dart)
     
-    # Check center-back seam length (A to B)
-    ab_length = np.linalg.norm(bk.B - bk.A)
-    center_back_seam_allow = seam_allowance if ab_length >= 1.0 else 0
-    
+    # A→GG (center back seam) must never have SA between 0 and 1 exclusive.
+    center_back_sa = 0.0 if seam_allowance == 0 else max(seam_allowance, 1.0)
+    a_pt = bk.A
+    def _back_sa_fn(run):
+        if np.allclose(run[-1], a_pt, atol=1e-4):
+            return center_back_sa
+        return seam_allowance
+
     # Points shared by both views (construction rectangle corners + reference pts)
     shared_interior = {
         "B":  bk.B,  "C":  bk.C,
@@ -615,7 +630,8 @@ def render(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
             "XX": bk.XX, "YY": bk.YY, "ZZ": bk.ZZ,
         },
         interior_labels=shared_interior,
-        seam_allowance=center_back_seam_allow,
+        seam_allowance=seam_allowance,
+        seam_allowance_fn=_back_sa_fn,
     )
 
     _write_svg(
@@ -623,7 +639,7 @@ def render(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
         front_outline,
         construction_lines=bk.construction_lines,
         dart_lines=bk.front_dart_lines,
-        fill="#fdeede", stroke="#aa5522",
+        fill="#dac7ff", stroke="#aa5522",
         outline_labels=front_labels,
         interior_labels=shared_interior,
         seam_allowance=seam_allowance,
