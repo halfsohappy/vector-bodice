@@ -23,6 +23,7 @@ sys.path.insert(0, SCRIPT_DIR)
 
 import block as blk
 import render as rnd
+import sleeve as slv
 
 # ── 2. Test fixture definitions ───────────────────────────────────────────────
 # Each tuple: (alpha, beta, gamma, delta, epsilon, zeta, eta, theta, label)
@@ -49,6 +50,15 @@ TEST_CASES = [
 ]
 
 SEAM_ALLOWANCES = [0.0, 0.375, 0.5, 0.625, 0.75, 1.0, 1.25]
+
+# Sleeve test cases: (sigma, upsilon, omega, xi, psi, label)
+SLEEVE_CASES = [
+    (23, 10, 17, 16, 6,   "standard"),
+    (21, 9,  15, 14, 5.5, "short"),
+    (25, 11, 19, 18, 6.5, "long"),
+    (23, 10, 17, 15, 7,   "narrow"),
+    (24, 10.5, 18, 17, 5, "wide_cuff"),
+]
 
 # ── 3. Helpers ────────────────────────────────────────────────────────────────
 
@@ -198,11 +208,69 @@ def run_tests():
             failed += 1
             failure_log.append(f"[FOLD FAIL] {name}: {e}\n" + traceback.format_exc())
 
-    # ── 5. Report ──────────────────────────────────────────────────────────────
+    # ── 5. Sleeve tests ────────────────────────────────────────────────────────
+    for sigma, upsilon, omega, xi, psi, name in SLEEVE_CASES:
+        # 5a. Build sleeve
+        total += 1
+        try:
+            sl = slv.build(sigma, upsilon, omega, xi, psi)
+        except Exception as e:
+            failed += 1
+            failure_log.append(f"[SLEEVE BUILD FAIL] {name}: {e}")
+            continue
+        passed += 1
+
+        # 5b. Curve seam allowance offset check
+        for sa in [0.375, 0.5, 0.75, 1.0]:
+            total += 1
+            try:
+                centroid = rnd._sample_outline(sl.sleeve_outline).mean(axis=0)
+                off = rnd._offset_curve_samples(sl.cap_segments, sa, centroid)
+                if len(off) < 2:
+                    raise RuntimeError("curve offset produced < 2 points")
+                if not np.all(np.isfinite(off)):
+                    raise RuntimeError("curve offset has NaN/Inf")
+                # Offset should be farther from centroid
+                cap_pts = []
+                for seg in sl.cap_segments:
+                    _, func, _, _ = seg
+                    for t in np.linspace(0, 1, 20):
+                        cap_pts.append(func(t))
+                cap_pts = np.array(cap_pts)
+                d_orig = np.linalg.norm(cap_pts - centroid, axis=1).mean()
+                d_off  = np.linalg.norm(off - centroid, axis=1).mean()
+                if d_off < d_orig - 0.01:
+                    raise RuntimeError(
+                        f"curve offset moved inward: orig={d_orig:.3f} off={d_off:.3f}")
+                passed += 1
+            except Exception as e:
+                failed += 1
+                failure_log.append(f"[SLEEVE CURVE SA FAIL] {name} sa={sa}: {e}")
+
+        # 5c. Render smoke-test
+        for sa in [0.0, 0.5, 0.75]:
+            total += 1
+            try:
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    prefix = os.path.join(tmpdir, "sleeve_test")
+                    slv.render(sigma, upsilon, omega, xi, psi,
+                               prefix=prefix, seam_allowance=sa)
+                    svg_path = prefix + ".svg"
+                    if not os.path.exists(svg_path) or os.path.getsize(svg_path) < 100:
+                        raise RuntimeError("SVG file missing or empty")
+                passed += 1
+            except Exception as e:
+                failed += 1
+                failure_log.append(
+                    f"[SLEEVE RENDER FAIL] {name} sa={sa}: {e}\n"
+                    + traceback.format_exc()
+                )
+
+    # ── 6. Report ──────────────────────────────────────────────────────────────
     print()
     print("=" * 60)
     print(f"  Seam allowance test suite")
-    print(f"  Cases:  {len(TEST_CASES)} measurement sets")
+    print(f"  Cases:  {len(TEST_CASES)} bodice + {len(SLEEVE_CASES)} sleeve")
     print(f"  SA values tested per case: {SEAM_ALLOWANCES}")
     print("=" * 60)
     print(f"  Total checks : {total}")

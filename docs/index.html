@@ -593,6 +593,31 @@
             <input type="checkbox" id="inp-deepen">
             <label for="inp-deepen">deepen bust dart (+½&quot;)</label>
           </div>
+
+          <hr class="form-divider">
+          <p class="hint-text">Optional sleeve measurements. Leave blank to skip.</p>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="inp-sigma" title="Shoulder to wrist length">Shoulder to wrist</label>
+              <input type="number" id="inp-sigma" value="" step="0.25" min="15" max="30" inputmode="decimal" placeholder="—">
+            </div>
+            <div class="form-group">
+              <label for="inp-upsilon" title="Underarm to elbow length">Underarm to elbow</label>
+              <input type="number" id="inp-upsilon" value="" step="0.25" min="5" max="18" inputmode="decimal" placeholder="—">
+            </div>
+            <div class="form-group">
+              <label for="inp-omega" title="Underarm to wrist length">Underarm to wrist</label>
+              <input type="number" id="inp-omega" value="" step="0.25" min="10" max="25" inputmode="decimal" placeholder="—">
+            </div>
+            <div class="form-group">
+              <label for="inp-xi" title="Armscye circumference">Armscye</label>
+              <input type="number" id="inp-xi" value="" step="0.25" min="10" max="24" inputmode="decimal" placeholder="—">
+            </div>
+            <div class="form-group">
+              <label for="inp-psi" title="Wrist circumference">Wrist</label>
+              <input type="number" id="inp-psi" value="" step="0.25" min="4" max="12" inputmode="decimal" placeholder="—">
+            </div>
+          </div>
         </div><!-- /card measurements -->
 
         <div class="card">
@@ -638,6 +663,7 @@
       <div class="tabs">
         <button class="tab active" data-tab="front">Front</button>
         <button class="tab" data-tab="back">Back</button>
+        <button class="tab" data-tab="sleeve">Sleeve</button>
       </div>
 
       <div class="error-banner" id="errorBanner"></div>
@@ -649,11 +675,13 @@
         </div>
         <div class="svg-container" id="svgFront" style="display:none"></div>
         <div class="svg-container" id="svgBack"  style="display:none"></div>
+        <div class="svg-container" id="svgSleeve" style="display:none"></div>
       </div>
 
       <div class="download-bar" id="downloadBar">
         <button class="btn btn-accent" id="btnDlFront">↓ Front</button>
         <button class="btn btn-accent" id="btnDlBack">↓ Back</button>
+        <button class="btn btn-accent" id="btnDlSleeve" style="display:none">↓ Sleeve</button>
         <span class="dl-spacer"></span>
         <button class="btn btn-secondary" id="btnDlBoth">↓ Combined SVG</button>
       </div>
@@ -676,8 +704,8 @@
 
     /* ── State ───────────────────────────────────────────────────────────── */
     let pyodide   = null;
-    let svgData   = { front: null, back: null };
-    let svgDims   = { front: [0, 0], back: [0, 0] };
+    let svgData   = { front: null, back: null, sleeve: null };
+    let svgDims   = { front: [0, 0], back: [0, 0], sleeve: [0, 0] };
     let activeTab = 'front';
 
     /* ── Helpers ─────────────────────────────────────────────────────────── */
@@ -687,8 +715,9 @@
     }
 
     function showTab(tab) {
-      document.getElementById('svgFront').style.display = tab === 'front' ? 'block' : 'none';
-      document.getElementById('svgBack').style.display  = tab === 'back'  ? 'block' : 'none';
+      document.getElementById('svgFront').style.display  = tab === 'front'  ? 'block' : 'none';
+      document.getElementById('svgBack').style.display   = tab === 'back'   ? 'block' : 'none';
+      document.getElementById('svgSleeve').style.display = tab === 'sleeve' ? 'block' : 'none';
     }
 
     function downloadSVG(svgStr, filename) {
@@ -737,7 +766,7 @@
       await pyodide.loadPackage('numpy');
 
       setStatus('loading pattern library…', 'loading');
-      const [blockSrc, renderSrc] = await Promise.all([
+      const [blockSrc, renderSrc, sleeveSrc] = await Promise.all([
         fetch('./block.py').then(r  => {
           if (!r.ok) throw new Error(`block.py fetch failed (${r.status})`);
           return r.text();
@@ -746,16 +775,22 @@
           if (!r.ok) throw new Error(`render.py fetch failed (${r.status})`);
           return r.text();
         }),
+        fetch('./sleeve.py').then(r => {
+          if (!r.ok) throw new Error(`sleeve.py fetch failed (${r.status})`);
+          return r.text();
+        }),
       ]);
 
       pyodide.FS.writeFile('/home/pyodide/block.py',  blockSrc);
       pyodide.FS.writeFile('/home/pyodide/render.py', renderSrc);
+      pyodide.FS.writeFile('/home/pyodide/sleeve.py', sleeveSrc);
 
       await pyodide.runPythonAsync(`
 import sys
 sys.path.insert(0, '/home/pyodide')
 import block
 import render
+import sleeve
       `);
 
       setStatus('ready', 'ready');
@@ -779,6 +814,7 @@ import render
       document.getElementById('placeholderText').textContent = 'Generating pattern…';
       document.getElementById('svgFront').style.display = 'none';
       document.getElementById('svgBack').style.display  = 'none';
+      document.getElementById('svgSleeve').style.display = 'none';
       document.getElementById('downloadBar').classList.remove('visible');
       setStatus('generating…', 'loading');
 
@@ -796,15 +832,26 @@ import render
           fold:    document.getElementById('inp-fold').checked,
           deepen:  document.getElementById('inp-deepen').checked,
           white:   document.getElementById('inp-white').checked,
+          sigma:   parseFloat(document.getElementById('inp-sigma').value),
+          upsilon: parseFloat(document.getElementById('inp-upsilon').value),
+          omega:   parseFloat(document.getElementById('inp-omega').value),
+          xi:      parseFloat(document.getElementById('inp-xi').value),
+          psi:     parseFloat(document.getElementById('inp-psi').value),
         };
+
+        const hasSleeve = !isNaN(vals.sigma) && !isNaN(vals.upsilon) &&
+                          !isNaN(vals.omega) && !isNaN(vals.xi) && !isNaN(vals.psi);
 
         // Validate before sending to Python
         const FIELD_LABELS = {
           alpha: 'waist', beta: 'bust', gamma: 'back length', delta: 'neck–shoulder',
           epsilon: 'shoulder–bust point', zeta: 'bust point to bust point', eta: 'front width', theta: 'back width',
         };
+        const SLEEVE_FIELDS = ['sigma', 'upsilon', 'omega', 'xi', 'psi'];
         for (const [k, v] of Object.entries(vals)) {
-          if (k !== 'fold' && (isNaN(v) || v < 0))
+          if (k === 'fold' || k === 'deepen' || k === 'white') continue;
+          if (SLEEVE_FIELDS.includes(k) && !hasSleeve) continue;
+          if (isNaN(v) || v < 0)
             throw new Error(`Invalid value for ${FIELD_LABELS[k] || k}`);
         }
 
@@ -818,14 +865,24 @@ _r = render.render_svgs(
     deepen_bust_dart=${vals.deepen ? 'True' : 'False'},
     white_fill=${vals.white ? 'True' : 'False'}
 )
+${hasSleeve ? `
+_s = sleeve.render_svg(
+    ${vals.sigma}, ${vals.upsilon}, ${vals.omega}, ${vals.xi}, ${vals.psi},
+    seam_allowance=${vals.seam},
+    white_fill=${vals.white ? 'True' : 'False'}
+)
+_r.update(_s)
+` : ''}
 json.dumps(_r)
         `);
 
         const result = JSON.parse(pyResult);
         svgData.front = result.front;
         svgData.back  = result.back;
+        svgData.sleeve = result.sleeve || null;
         svgDims.front = [result.front_w, result.front_h];
         svgDims.back  = [result.back_w,  result.back_h];
+        if (result.sleeve) svgDims.sleeve = [result.sleeve_w, result.sleeve_h];
 
         // Strip @import and explicit px dimensions so viewBox drives scaling
         const clean = s => s
@@ -835,6 +892,20 @@ json.dumps(_r)
 
         document.getElementById('svgFront').innerHTML = clean(svgData.front);
         document.getElementById('svgBack').innerHTML  = clean(svgData.back);
+        if (svgData.sleeve) {
+          document.getElementById('svgSleeve').innerHTML = clean(svgData.sleeve);
+        } else {
+          document.getElementById('svgSleeve').innerHTML = '';
+        }
+
+        // Show/hide sleeve tab and download button
+        const sleeveTab = document.querySelector('.tab[data-tab="sleeve"]');
+        sleeveTab.style.display = svgData.sleeve ? '' : 'none';
+        document.getElementById('btnDlSleeve').style.display = svgData.sleeve ? '' : 'none';
+        if (!svgData.sleeve && activeTab === 'sleeve') {
+          activeTab = 'front';
+          document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === 'front'));
+        }
 
         document.getElementById('previewPlaceholder').style.display = 'none';
         document.getElementById('downloadBar').classList.add('visible');
@@ -910,6 +981,12 @@ json.dumps(_r)
         downloadSVG(svgData.back, dlFilename('back', w, h));
       }
     });
+    document.getElementById('btnDlSleeve').addEventListener('click', () => {
+      if (svgData.sleeve) {
+        const [w, h] = svgDims.sleeve;
+        downloadSVG(svgData.sleeve, `sleeve_block_${w}x${h}.svg`);
+      }
+    });
     document.getElementById('btnDlBoth').addEventListener('click', () => {
       if (!svgData.front || !svgData.back) return;
       const [fw, fh] = svgDims.front;
@@ -921,16 +998,16 @@ json.dumps(_r)
 
     /* ── Random size fill ─────────────────────────────────────────────────── */
     const TEST_SIZES = [
-      { a:24, b:32, g:14.5,  d:4.5,  e:8.0,  z:6.5, n:12.5, t:12.5, label:'XS' },
-      { a:26, b:34, g:15.0,  d:4.75, e:8.5,  z:7.0, n:13.0, t:13.0, label:'S' },
-      { a:28, b:36, g:15.5,  d:5.0,  e:9.0,  z:7.0, n:14.0, t:14.0, label:'M' },
-      { a:30, b:38, g:16.0,  d:5.25, e:9.5,  z:7.5, n:14.5, t:14.5, label:'L' },
-      { a:32, b:40, g:16.0,  d:5.25, e:10.0, z:8.0, n:15.0, t:14.5, label:'XL' },
-      { a:34, b:42, g:16.5,  d:5.5,  e:10.5, z:8.5, n:15.5, t:15.0, label:'2XL' },
-      { a:25, b:33, g:13.5,  d:4.25, e:7.5,  z:6.5, n:12.5, t:12.5, label:'petite S' },
-      { a:27, b:35, g:17.5,  d:5.0,  e:9.0,  z:7.0, n:13.5, t:13.5, label:'tall S' },
-      { a:26, b:40, g:15.5,  d:5.0,  e:9.5,  z:7.5, n:14.5, t:14.0, label:'hourglass' },
-      { a:30, b:44, g:16.0,  d:5.25, e:10.5, z:9.0, n:15.5, t:15.0, label:'full bust' },
+      { a:24, b:32, g:14.5,  d:4.5,  e:8.0,  z:6.5, n:12.5, t:12.5, si:22,   u:9,  w:16,  xi:14, ps:5.5, label:'XS' },
+      { a:26, b:34, g:15.0,  d:4.75, e:8.5,  z:7.0, n:13.0, t:13.0, si:22.5, u:9.5,w:16.5,xi:15, ps:5.75,label:'S' },
+      { a:28, b:36, g:15.5,  d:5.0,  e:9.0,  z:7.0, n:14.0, t:14.0, si:23,   u:10, w:17,  xi:16, ps:6,   label:'M' },
+      { a:30, b:38, g:16.0,  d:5.25, e:9.5,  z:7.5, n:14.5, t:14.5, si:23.5, u:10, w:17.5,xi:17, ps:6.25,label:'L' },
+      { a:32, b:40, g:16.0,  d:5.25, e:10.0, z:8.0, n:15.0, t:14.5, si:24,   u:10.5,w:18, xi:18, ps:6.5, label:'XL' },
+      { a:34, b:42, g:16.5,  d:5.5,  e:10.5, z:8.5, n:15.5, t:15.0, si:24.5, u:11, w:18.5,xi:19, ps:6.75,label:'2XL' },
+      { a:25, b:33, g:13.5,  d:4.25, e:7.5,  z:6.5, n:12.5, t:12.5, si:21,   u:8.5,w:15,  xi:14, ps:5.5, label:'petite S' },
+      { a:27, b:35, g:17.5,  d:5.0,  e:9.0,  z:7.0, n:13.5, t:13.5, si:24.5, u:11, w:18.5,xi:15.5,ps:6,  label:'tall S' },
+      { a:26, b:40, g:15.5,  d:5.0,  e:9.5,  z:7.5, n:14.5, t:14.0, si:23,   u:10, w:17,  xi:17, ps:6,   label:'hourglass' },
+      { a:30, b:44, g:16.0,  d:5.25, e:10.5, z:9.0, n:15.5, t:15.0, si:23.5, u:10.5,w:17.5,xi:18.5,ps:6.5,label:'full bust' },
     ];
 
     const SA_VALUES = ['0', '0.375', '0.5', '0.625', '0.75', '1', '1.25'];
@@ -949,6 +1026,11 @@ json.dumps(_r)
       document.getElementById('inp-zeta').value    = s.z;
       document.getElementById('inp-eta').value     = s.n;
       document.getElementById('inp-theta').value   = s.t;
+      document.getElementById('inp-sigma').value   = s.si;
+      document.getElementById('inp-upsilon').value = s.u;
+      document.getElementById('inp-omega').value   = s.w;
+      document.getElementById('inp-xi').value      = s.xi;
+      document.getElementById('inp-psi').value     = s.ps;
       const tag = document.getElementById('sizeTag');
       tag.textContent = s.label;
       tag.classList.add('visible');
@@ -960,7 +1042,7 @@ json.dumps(_r)
     }
     document.getElementById('btnRandom').addEventListener('click', randomFill);
     // Clear size tag when user manually edits any measurement
-    document.querySelectorAll('#inp-alpha,#inp-beta,#inp-gamma,#inp-delta,#inp-epsilon,#inp-zeta,#inp-eta,#inp-theta')
+    document.querySelectorAll('#inp-alpha,#inp-beta,#inp-gamma,#inp-delta,#inp-epsilon,#inp-zeta,#inp-eta,#inp-theta,#inp-sigma,#inp-upsilon,#inp-omega,#inp-xi,#inp-psi')
       .forEach(inp => inp.addEventListener('input', () =>
         document.getElementById('sizeTag').classList.remove('visible')));
 

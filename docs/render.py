@@ -217,6 +217,60 @@ def _seam_runs_no_waist(segments, seam_allowance, seam_allowance_fn):
     return result
 
 
+def _offset_curve_samples(segments, distance, centroid, n_per_seg=40):
+    """Outward parallel offset of a chain of cubic_curve segments.
+
+    Samples each curve segment densely, computes the outward-pointing unit
+    normal at every sample via central finite differences, then offsets each
+    point by *distance* along that normal (like Illustrator's "offset path").
+
+    Returns an np.array of offset points suitable for rendering as a polyline.
+    Only processes "cubic_curve" segments; others are skipped.
+    """
+    centroid = np.asarray(centroid, float)
+    raw_pts = []
+    for seg in segments:
+        if seg[0] != "cubic_curve":
+            continue
+        _, func, _p0, _p1 = seg
+        ts = np.linspace(0, 1, n_per_seg)
+        pts = np.array([func(t) for t in ts])
+        first_seg = (len(raw_pts) == 0)
+        if first_seg:
+            raw_pts.extend(pts)
+        else:
+            raw_pts.extend(pts[1:])    # skip duplicate join point
+
+    if len(raw_pts) < 2:
+        return np.empty((0, 2))
+
+    pts = np.array(raw_pts, dtype=float)
+    n = len(pts)
+    normals = np.zeros_like(pts)
+
+    for i in range(n):
+        if i == 0:
+            tang = pts[1] - pts[0]
+        elif i == n - 1:
+            tang = pts[-1] - pts[-2]
+        else:
+            tang = pts[i + 1] - pts[i - 1]
+        tl = np.linalg.norm(tang)
+        if tl < 1e-12:
+            normals[i] = np.array([0.0, 1.0])
+            continue
+        tang /= tl
+        # 90° CCW rotation → candidate outward normal
+        nv = np.array([-tang[1], tang[0]])
+        # Flip if it points inward (toward centroid)
+        mid = pts[i]
+        if np.linalg.norm(mid + nv - centroid) < np.linalg.norm(mid - centroid):
+            nv = -nv
+        normals[i] = nv
+
+    return pts + normals * distance
+
+
 def _offset_open_polyline(pts, distance, centroid):
     """Outward parallel offset of an open polyline.
 
@@ -530,7 +584,9 @@ def _label_elements(convert, outline, centroid_model, name, pt, filled,
 
 def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
                outline_labels, interior_labels, seam_allowance=0,
-               seam_allowance_fn=None, label_offsets=None):
+               seam_allowance_fn=None, label_offsets=None,
+               curve_seam_segments=None, curve_seam_allowance=None,
+               unclipped_construction_lines=None, text_annotations=None):
     # Compute seam allowance runs (open polylines) in model space for bbox.
     # seam_allowance_fn, if provided, takes a run (np.array of points) and returns
     # the SA for that run, allowing per-run overrides.
@@ -541,9 +597,17 @@ def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
     for run, sa in _seam_runs_no_waist(outline, seam_allowance, seam_allowance_fn):
         seam_offset_runs.append(_offset_open_polyline(run, sa, centroid_temp))
 
+    # Curve-based seam allowance (sleeve cap, etc.)
+    curve_offset_runs = []
+    if curve_seam_segments and curve_seam_allowance and curve_seam_allowance > 1e-6:
+        curve_off = _offset_curve_samples(
+            curve_seam_segments, curve_seam_allowance, centroid_temp)
+        if len(curve_off) > 1:
+            curve_offset_runs.append(curve_off)
+
     # bounding box: outline + seam offset only.
     # Construction lines span the full grid rectangle and must not inflate the canvas.
-    all_pt_arrays = ([_sample_bbox(outline)] + seam_offset_runs)
+    all_pt_arrays = ([_sample_bbox(outline)] + seam_offset_runs + curve_offset_runs)
     all_pts = np.vstack(all_pt_arrays)
 
     convert, w, h, w_in, h_in = _make_converter(all_pts)
@@ -574,6 +638,16 @@ def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
         lines.append(f'  <path d="{" ".join(d_parts)}" fill="none" stroke="{stroke}"'
                      f'        stroke-width="5" stroke-dasharray="6 6" opacity="0.5"'
                      f'        stroke-linecap="round"/>')
+
+    # curve seam allowance — one open dashed path per curve offset run
+    for off_pts in curve_offset_runs:
+        svg_pts = convert(off_pts)
+        d_parts = [f"M {svg_pts[0,0]:.2f},{svg_pts[0,1]:.2f}"]
+        for sp in svg_pts[1:]:
+            d_parts.append(f"L {sp[0]:.2f},{sp[1]:.2f}")
+        lines.append(f'  <path d="{" ".join(d_parts)}" fill="none" stroke="{stroke}"'
+                     f'        stroke-width="5" stroke-dasharray="6 6" opacity="0.5"'
+                     f'        stroke-linecap="round"/>')
     
     lines += [
         # bodice fill
@@ -589,6 +663,18 @@ def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
             f'          stroke="#aaa" stroke-width="5" stroke-dasharray="12 9"/>'
         )
     lines.append('  </g>')
+
+    # unclipped construction lines (e.g. EG, EH extending beyond the pattern body)
+    if unclipped_construction_lines:
+        lines.append('  <g>')
+        for p0, p1 in unclipped_construction_lines:
+            x0, y0 = convert(p0)[0]
+            x1, y1 = convert(p1)[0]
+            lines.append(
+                f'    <line x1="{x0:.1f}" y1="{y0:.1f}" x2="{x1:.1f}" y2="{y1:.1f}"'
+                f'          stroke="#aaa" stroke-width="5" stroke-dasharray="12 9"/>'
+            )
+        lines.append('  </g>')
 
     # dart construction lines — rendered unclipped so they show inside dart notches
     lines.append('  <g>')
@@ -633,6 +719,18 @@ def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
     # Text rendered after and outside the clip so it is never cut off
     for t in all_texts:
         lines += t
+
+    # Large text annotations (e.g. "Back of Sleeve", "Elbow Line")
+    if text_annotations:
+        for label, pt, color, fsize in text_annotations:
+            sx, sy = convert(pt)[0]
+            lines.append(
+                f'  <text x="{sx:.1f}" y="{sy:.1f}"'
+                f'        font-family="{FONT_FAMILY}" font-size="{fsize}"'
+                f'        fill="{color}" font-weight="bold"'
+                f'        text-anchor="middle" dominant-baseline="middle">{label}</text>'
+            )
+
     lines.append('</svg>')
 
     svg_string = "\n".join(lines)

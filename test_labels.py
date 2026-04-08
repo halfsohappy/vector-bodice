@@ -17,6 +17,21 @@ from render import (
     _INTERIOR_LABEL_OFFSETS,
     _sample_outline,
 )
+from sleeve import (
+    build as sleeve_build,
+    _SLEEVE_LABEL_OFFSETS,
+    _SLEEVE_INTERIOR_OFFSETS,
+)
+
+# ── Sleeve test sizes ─────────────────────────────────────────────────────────
+
+SLEEVE_TEST_SIZES = [
+    dict(sigma=23, upsilon=10, omega=17, xi=16, psi=6, label="standard"),
+    dict(sigma=21, upsilon=9,  omega=15, xi=14, psi=5.5, label="short"),
+    dict(sigma=25, upsilon=11, omega=19, xi=18, psi=6.5, label="long"),
+    dict(sigma=23, upsilon=10, omega=17, xi=15, psi=7, label="narrow"),
+    dict(sigma=24, upsilon=10.5, omega=18, xi=17, psi=5, label="wide cuff"),
+]
 
 # ── The same 10 sizes used in test_seam.py ───────────────────────────────────
 
@@ -114,13 +129,36 @@ def run_tests():
                     f"  dot={np.round(pt,3)}  text={np.round(anchor,3)}"
                 )
 
+    # ── Sleeve piece ──
+    for sz in SLEEVE_TEST_SIZES:
+        sl = sleeve_build(sz["sigma"], sz["upsilon"], sz["omega"], sz["xi"], sz["psi"])
+        tag = f"sleeve/{sz['label']}"
+        sleeve_poly = _sample_outline(sl.sleeve_outline)
+        sleeve_offsets = {**_SLEEVE_INTERIOR_OFFSETS, **_SLEEVE_LABEL_OFFSETS}
+
+        sleeve_outline_labels = {
+            "K": sl.K, "G": sl.G, "M": sl.M, "N": sl.N,
+            "E": sl.E, "O": sl.O, "P": sl.P, "H": sl.H,
+            "L": sl.L, "Q": sl.Q, "R": sl.R,
+        }
+        for name, pt in sleeve_outline_labels.items():
+            anchor = _text_anchor_model(name, pt, sleeve_offsets)
+            if anchor is None:
+                continue
+            checks += 1
+            if not _point_in_polygon(anchor, sleeve_poly):
+                fails.append(
+                    f"  FAIL  {tag}/{name:4s}"
+                    f"  dot={np.round(pt,3)}  text={np.round(anchor,3)}"
+                )
+
     # ── Report ──
     width = 60
     print("=" * width)
     print("  Label colour-interaction test")
     print("  (checks: outline label text anchor is inside the fill region)")
     print("=" * width)
-    print(f"  Sizes tested : {len(TEST_SIZES)}")
+    print(f"  Sizes tested : {len(TEST_SIZES)} bodice + {len(SLEEVE_TEST_SIZES)} sleeve")
     print(f"  Checks ran   : {checks}")
     print(f"  Failed       : {len(fails)}")
     if fails:
@@ -129,7 +167,7 @@ def run_tests():
             print(f)
     else:
         print()
-        print("  All label text anchors sit inside the bodice fill — no")
+        print("  All label text anchors sit inside the fill regions — no")
         print("  interaction with outline strokes or page background.")
     print("=" * width)
     return len(fails) == 0
