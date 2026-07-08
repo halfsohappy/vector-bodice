@@ -1,5 +1,14 @@
+"""Front bodice piece.
+
+Drafts the shared construction grid (base rectangle, centerlines) and every
+front point, then joins them into the front outline.  The back piece
+(back_bodice.py) is drafted on top of this namespace.
+"""
+
 import numpy as np
 from types import SimpleNamespace
+
+from geometry import cubic_bezier
 
 
 # ── Lookup tables ─────────────────────────────────────────────────────────────
@@ -38,27 +47,8 @@ def find_S(R, epsilon, c, g):
     S_y = R[1] - np.sqrt(epsilon**2 - (S_x - R[0])**2)
     return np.array([S_x, S_y])
 
-def find_DD(AA, CC, delta):
-    direction = (CC - AA) / np.linalg.norm(CC - AA)
-    return AA + (delta + 0.5) * direction
-
-def find_FF(S, a, c, V, Q, EE):
-    upper_dart = np.array([(c + 0.5) / 2,  S[1] - a / 2])
-    VQ_len     = np.linalg.norm(V - Q)
-    FF_x       = EE[0]
-    FF_y       = upper_dart[1] - np.sqrt(VQ_len**2 - (FF_x - upper_dart[0])**2)
-    return np.array([FF_x, FF_y])
-
 
 # ── Curves ────────────────────────────────────────────────────────────────────
-
-def cubic_bezier(P0, P1, P2, P3, t):
-    t = np.asarray(t, dtype=float)
-    scalar = t.ndim == 0
-    t = np.atleast_1d(t)[:, None]
-    pts = ((1-t)**3 * P0 + 3*(1-t)**2*t * P1 +
-           3*(1-t)*t**2 * P2 + t**3 * P3)
-    return pts[0] if scalar else pts
 
 def curve_neck(K, M, t):
     r   = abs(K[1] - M[1])
@@ -87,39 +77,13 @@ def curve_armhole_lower(P, O, t):
     P2 = O - 0.75 * width * tangent_O
     return cubic_bezier(P, P1, P2, O, t)
 
-def curve_back_neck(A, AA, DD, t):
-    shoulder_dir = (DD - AA) / np.linalg.norm(DD - AA)
-    neck_at_AA   = np.array([-shoulder_dir[1], shoulder_dir[0]])
-    lam = np.linalg.norm(AA - A) * 0.5523
-    P1  = A  + lam * np.array([1.0, 0.0])
-    P2  = AA - lam * neck_at_AA
-    return cubic_bezier(A, P1, P2, AA, t)
-
-def curve_back_armhole_upper(AA, DD, BB, t):
-    """Back upper armhole: DD → BB with corner at DD → vertical tangent at BB."""
-    start_dir = (BB - DD) / np.linalg.norm(BB - DD)
-    tangent_BB = np.array([0.0, -1.0])
-    chord_len = np.linalg.norm(BB - DD)
-    P1 = DD + (1.0/3.0) * chord_len * start_dir
-    P2 = BB - (1.0/3.0) * chord_len * tangent_BB
-    return cubic_bezier(DD, P1, P2, BB, t)
-
-def curve_back_armhole_lower(BB, O, t):
-    """Back lower armhole: BB → O with vertical tangent at BB → horizontal at O."""
-    tangent_BB = np.array([0.0, -1.0])
-    tangent_O = np.array([1.0, 0.0])
-    width = abs(O[0] - BB[0])
-    height = abs(BB[1] - O[1])
-    P1 = BB + 0.75 * height * tangent_BB
-    P2 = O - 0.75 * width * tangent_O
-    return cubic_bezier(BB, P1, P2, O, t)
-
 
 # ── Builder ───────────────────────────────────────────────────────────────────
 
-def build(alpha, beta, gamma, delta, epsilon, zeta, eta, theta, deepen_bust_dart=False):
-    """Compute all derived measurements, points, and outlines for a given set
-    of the 8 objective body measurements.  Returns a SimpleNamespace."""
+def build(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
+          deepen_bust_dart=False):
+    """Compute derived measurements, the shared construction grid, and all
+    front points and outlines.  Returns a SimpleNamespace."""
 
     # Derived measurements
     a = k1(beta)
@@ -162,17 +126,6 @@ def build(alpha, beta, gamma, delta, epsilon, zeta, eta, theta, deepen_bust_dart
     # Front: waist dart
     W = np.array([S[0],  S[1] - 1])
 
-    # Back: neck and shoulder
-    AA = np.array([2.5,  gamma + a + 0.5    ])
-    BB = np.array([h,    0.75*gamma + a     ])
-    CC = np.array([h,    0.75*gamma + a + 3 ])
-    DD = find_DD(AA, CC, delta)
-
-    # Back: side seam and waist
-    EE = np.array([f + b - 0.25,  0])
-    FF = find_FF(S, a, c, V, Q, EE)
-    GG = np.array([0,  FF[1]])
-
     # Construction line endpoints
     E = np.array([(c + 0.5) / 2,  gamma + a     ])  # top of vertical centerline
     F = np.array([(c + 0.5) / 2,  0             ])  # bottom of vertical centerline
@@ -187,11 +140,6 @@ def build(alpha, beta, gamma, delta, epsilon, zeta, eta, theta, deepen_bust_dart
     VV = np.array([S[0] - b / 2,   0             ])   # front waist dart left base
     WW = np.array([S[0] + b / 2,   0             ])   # front waist dart right base
 
-    _cx = FF[0] / 2 - 0.75
-    XX = np.array([_cx - b / 2,    FF[1]         ])   # back dart left base  (on GG–FF line)
-    YY = np.array([_cx + b / 2,    FF[1]         ])   # back dart right base (on GG–FF line)
-    ZZ = np.array([_cx,            0.5*gamma + a ])   # back dart tip        (at I–J line)
-
     # ── Quadratic Bézier control points ───────────────────────────────────────
     # Each CP is the intersection of the tangent lines at the two endpoints.
     # A quadratic Bézier has no inflection points.
@@ -202,45 +150,10 @@ def build(alpha, beta, gamma, delta, epsilon, zeta, eta, theta, deepen_bust_dart
     # intersection = L = (K[0], M[1])  (already defined)
     _neck_cp  = L
 
-    # front armhole: P → O  (stored reversed as O → P)
-    # tangent at P: direction N→P
-    # tangent at O: vertical   → line x = O[0]
-    _NP_dir   = (P - N) / np.linalg.norm(P - N)
-    _arm_cp   = P + ((O[0] - P[0]) / _NP_dir[0]) * _NP_dir
-
-    # front neck: K → M
-    # tangent at K: vertical   → line x = K[0]
-    # tangent at M: horizontal → line y = M[1]
-    # intersection = L = (K[0], M[1])  (already defined)
-    _neck_cp  = L
-
-    # back neck: A → AA
-    # tangent at A:  horizontal → line y = A[1]
-    # tangent at AA: perpendicular to shoulder (neck_at_AA direction)
-    _sdir     = (DD - AA) / np.linalg.norm(DD - AA)
-    _perp     = np.array([-_sdir[1], _sdir[0]])       # 90° CCW of shoulder
-    _bneck_cp = AA + ((A[1] - AA[1]) / _perp[1]) * _perp
-
-    # front armhole: now split into upper (N→P, vertical tangent at P) and lower (P→O, horizontal tangent at O)
-    # back armhole: now split into upper (DD→BB, horizontal tangent at BB) and lower (BB→O, vertical tangent at O)
-    
-    # ── Outlines ──────────────────────────────────────────────────────────────
+    # ── Outline ───────────────────────────────────────────────────────────────
     # Each segment: ("line", P0, P1), ("quadratic", P0, CP, P3), or ("cubic_curve", func, P0, P1)
 
-    back_bodice = [
-        ("line",      GG,  A  ),                         # center back (GG→A)
-        ("quadratic", A,   _bneck_cp, AA),               # back neck
-        ("line",      AA,  DD ),                         # shoulder seam
-        ("cubic_curve", lambda t: curve_back_armhole_upper(AA, DD, BB, t), DD, BB ),  # back armhole, upper (DD→BB)
-        ("cubic_curve", lambda t: curve_back_armhole_lower(BB, O, t), BB, O  ),   # back armhole, lower (BB→O)
-        ("line",      O,   FF ),                         # side seam
-        ("line",      FF,  YY ),                         # bottom, right of dart
-        ("dart",      YY,  ZZ ),                         # back dart leg
-        ("dart",      ZZ,  XX ),                         # back dart leg
-        ("line",      XX,  GG ),                         # bottom to center back
-    ]
-
-    front_bodice = [
+    outline = [
         ("line",      M,   D  ),                         # center front
         ("line",      D,   WW ),                         # waist, right of dart
         ("dart",      WW,  W  ),                         # front waist dart leg
@@ -256,28 +169,21 @@ def build(alpha, beta, gamma, delta, epsilon, zeta, eta, theta, deepen_bust_dart
         ("quadratic", K,   _neck_cp,  M ),               # front neck (K→M)
     ]
 
-    # ── Construction lines ────────────────────────────────────────────────────
+    # ── Construction lines (shared grid) ──────────────────────────────────────
     construction_lines = [
         (E,  F ),   # vertical centerline
         (G,  H ),   # upper horizontal  (G–H line)
         (I,  J ),   # middle horizontal (I–J line)
-        (GG, FF),   # back waist horizontal
     ]
 
     _mid_vvww = (VV + WW) / 2   # midpoint of front waist dart base
-    _mid_xxyy = (XX + YY) / 2   # midpoint of back dart base
 
-    front_dart_lines = [
+    dart_lines = [
         (UU, U ),           # bust dart: upper base to U
         (U,  V ),           # bust dart: U to lower base
         (U,  T ),           # bust dart: U to tip
         (VV, WW),           # front waist dart base line
         (W,  _mid_vvww),    # front waist dart: tip to base midpoint
-    ]
-
-    back_dart_lines = [
-        (XX, YY),           # back dart base line
-        (ZZ, _mid_xxyy),    # back dart: tip to base midpoint
     ]
 
     return SimpleNamespace(
@@ -293,13 +199,9 @@ def build(alpha, beta, gamma, delta, epsilon, zeta, eta, theta, deepen_bust_dart
         O=O, P=P, Q=Q,
         R=R, S=S,
         T=T, U=U, V=V, W=W,
-        AA=AA, BB=BB, CC=CC, DD=DD,
-        EE=EE, FF=FF, GG=GG,
-        UU=UU, VV=VV, WW=WW, XX=XX, YY=YY, ZZ=ZZ,
-        # outlines and construction
-        back_bodice=back_bodice,
-        front_bodice=front_bodice,
+        UU=UU, VV=VV, WW=WW,
+        # outline and construction
+        outline=outline,
         construction_lines=construction_lines,
-        front_dart_lines=front_dart_lines,
-        back_dart_lines=back_dart_lines,
+        dart_lines=dart_lines,
     )

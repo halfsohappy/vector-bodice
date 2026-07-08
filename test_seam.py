@@ -1,5 +1,5 @@
 """
-test_seam.py — Seam-allowance regression suite for block.py / render.py.
+test_seam.py — Seam-allowance regression suite for patterns/bodice / render.py.
 
 Tests a representative range of bodice measurements (XS through 2XL, petite,
 tall, high-contrast hourglass) across a range of seam-allowance values.
@@ -21,9 +21,9 @@ import numpy as np
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SCRIPT_DIR)
 
-import block as blk
 import render as rnd
-import sleeve as slv
+import patterns.bodice as blk
+import patterns.bodice.sleeve as slv
 
 # ── 2. Test fixture definitions ───────────────────────────────────────────────
 # Each tuple: (alpha, beta, gamma, delta, epsilon, zeta, eta, theta, label)
@@ -136,7 +136,7 @@ def _render_to_tempdir(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
     """Render to a temp directory; return (front_path, back_path)."""
     with tempfile.TemporaryDirectory() as tmpdir:
         prefix = os.path.join(tmpdir, "t")
-        rnd.render(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
+        blk.render(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
                    prefix=prefix, fold=fold, seam_allowance=seam_allowance)
         front = prefix + "_front.svg"
         back  = prefix + "_back.svg"
@@ -224,7 +224,7 @@ def run_tests():
         for sa in [0.375, 0.5, 0.75, 1.0]:
             total += 1
             try:
-                centroid = rnd._sample_outline(sl.sleeve_outline).mean(axis=0)
+                centroid = rnd._sample_outline(sl.outline).mean(axis=0)
                 off = rnd._offset_curve_samples(sl.cap_segments, sa, centroid)
                 if len(off) < 2:
                     raise RuntimeError("curve offset produced < 2 points")
@@ -253,8 +253,8 @@ def run_tests():
             try:
                 with tempfile.TemporaryDirectory() as tmpdir:
                     prefix = os.path.join(tmpdir, "sleeve_test")
-                    slv.render(sigma, upsilon, omega, xi, psi,
-                               prefix=prefix, seam_allowance=sa)
+                    blk.render_sleeve(sigma, upsilon, omega, xi, psi,
+                                      prefix=prefix, seam_allowance=sa)
                     svg_path = prefix + ".svg"
                     if not os.path.exists(svg_path) or os.path.getsize(svg_path) < 100:
                         raise RuntimeError("SVG file missing or empty")

@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>automated bodice block generator</title>
+  <title>automated pattern block generator</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@300;400;500;700&family=Playwrite+DE+Grund:wght@400&display=swap" rel="stylesheet">
   <style>
     /* =============================================
-       automated bodice block generator
+       automated pattern block generator
        Design language: Gooey / Annabel Portfolio
        Light / Dark · Martian Mono · Playwrite DE Grund
        ============================================= */
@@ -272,6 +272,25 @@
     }
     .form-group input[type="number"]::-webkit-inner-spin-button { opacity: .3; }
 
+    .form-group select {
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 400;
+      padding: 6px 9px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-input);
+      color: var(--text-dark);
+      outline: none;
+      width: 100%;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+    }
+    .form-group select:focus {
+      border-color: var(--border-focus);
+      background: var(--bg-card);
+    }
+
     .form-divider {
       border: none;
       border-top: 1px solid var(--border);
@@ -524,8 +543,8 @@
   <!-- ===== Header ===== -->
   <header class="main-header">
     <div class="header-brand">
-      <span class="brand-name">automated bodice & sleeve block generator</span>
-      <span class="brand-sub">tool by annie lee; derived from Costume Technician’s Handbook, 3rd Ed, Ingham/Covey p. 110–117, 137-139</span>
+      <span class="brand-name">automated pattern block generator</span>
+      <span class="brand-sub" id="brandSub">tool by annie lee</span>
     </div>
     <div class="header-right">
       <div class="status-pill">
@@ -544,80 +563,20 @@
       <div class="panel-scroll">
 
         <div class="card">
+          <h2>Pattern</h2>
+          <div class="form-group">
+            <select id="patternSelect" title="Choose which pattern to draft"></select>
+          </div>
+          <p class="hint-text" id="patternSource" style="margin:8px 0 0"></p>
+        </div><!-- /card pattern -->
+
+        <div class="card">
           <div class="card-header">
             <h2>Measurements</h2>
             <button class="btn btn-secondary btn-sm" id="btnRandom" title="Load a random size from the built-in test suite">⚄ random</button>
           </div>
           <p class="hint-text">All values in inches. Hover a label for guidance.<span id="sizeTag" class="size-tag"></span></p>
-          <div class="form-grid">
-
-            <div class="form-group">
-              <label for="inp-alpha" title="Circumference at the natural waist">Waist</label>
-              <input type="number" id="inp-alpha" value="28" step="0.25" min="18" max="60" inputmode="decimal">
-            </div>
-            <div class="form-group">
-              <label for="inp-beta" title="Circumference at the fullest part of the bust">Bust</label>
-              <input type="number" id="inp-beta" value="36" step="0.25" min="24" max="72" inputmode="decimal">
-            </div>
-
-            <div class="form-group">
-              <label for="inp-gamma" title="Distance down the back from base of neck (nape) to natural waist">Back nape to waist</label>
-              <input type="number" id="inp-gamma" value="15.5" step="0.25" min="10" max="26" inputmode="decimal">
-            </div>
-            <div class="form-group">
-              <label for="inp-delta" title="Over the shoulder from base of neck to shoulder tip">Neck to shoulder</label>
-              <input type="number" id="inp-delta" value="5" step="0.25" min="2" max="10" inputmode="decimal">
-            </div>
-
-            <div class="form-group">
-              <label for="inp-epsilon" title="Straight from shoulder tip down to bust point (nipple level)">Shoulder center to bust point</label>
-              <input type="number" id="inp-epsilon" value="9" step="0.25" min="5" max="16" inputmode="decimal">
-            </div>
-            <div class="form-group">
-              <label for="inp-zeta" title="Full distance between bust points, nipple to nipple">Bust point to bust point</label>
-              <input type="number" id="inp-zeta" value="7" step="0.25" min="3" max="14" inputmode="decimal">
-            </div>
-
-            <div class="form-group">
-              <label for="inp-eta" title="Width of the front body from side seam to center front, at bust level">Front width</label>
-              <input type="number" id="inp-eta" value="14" step="0.25" min="8" max="24" inputmode="decimal">
-            </div>
-            <div class="form-group">
-              <label for="inp-theta" title="Width of the back body from side seam to center back, at bust level">Back width</label>
-              <input type="number" id="inp-theta" value="14" step="0.25" min="8" max="24" inputmode="decimal">
-            </div>
-
-          </div>
-
-          <div class="cb-row" style="margin-top:10px">
-            <input type="checkbox" id="inp-deepen">
-            <label for="inp-deepen">deepen bust dart (+½&quot;)</label>
-          </div>
-
-          <hr class="form-divider">
-          <p class="hint-text">Optional sleeve measurements. Leave blank to skip.</p>
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="inp-sigma" title="Shoulder to wrist length">Shoulder to wrist</label>
-              <input type="number" id="inp-sigma" value="" step="0.25" min="15" max="30" inputmode="decimal" placeholder="—">
-            </div>
-            <div class="form-group">
-              <label for="inp-upsilon" title="Underarm to elbow length">Underarm to elbow</label>
-              <input type="number" id="inp-upsilon" value="" step="0.25" min="5" max="18" inputmode="decimal" placeholder="—">
-            </div>
-            <div class="form-group">
-              <label for="inp-omega" title="Underarm to wrist length">Underarm to wrist</label>
-              <input type="number" id="inp-omega" value="" step="0.25" min="10" max="25" inputmode="decimal" placeholder="—">
-            </div>
-            <div class="form-group">
-              <label for="inp-xi" title="Armscye circumference">Armscye</label>
-              <input type="number" id="inp-xi" value="" step="0.25" min="10" max="24" inputmode="decimal" placeholder="—">
-            </div>
-            <div class="form-group">
-              <label for="inp-psi" title="Wrist circumference">Wrist</label>
-              <input type="number" id="inp-psi" value="" step="0.25" min="4" max="12" inputmode="decimal" placeholder="—">
-            </div>
-          </div>
+          <div id="measureFields"><!-- built from the pattern manifest --></div>
         </div><!-- /card measurements -->
 
         <div class="card">
@@ -639,10 +598,7 @@
 
           <hr class="form-divider">
 
-          <div class="cb-row">
-            <input type="checkbox" id="inp-fold" checked>
-            <label for="inp-fold">on the fold (mirror front piece)</label>
-          </div>
+          <div id="patternOptions"><!-- built from the pattern manifest --></div>
 
           <div class="cb-row">
             <input type="checkbox" id="inp-white">
@@ -660,11 +616,7 @@
     <!-- Right: preview -->
     <div class="panel-right">
 
-      <div class="tabs">
-        <button class="tab active" data-tab="front">Front</button>
-        <button class="tab" data-tab="back">Back</button>
-        <button class="tab" data-tab="sleeve">Sleeve</button>
-      </div>
+      <div class="tabs" id="tabs"><!-- one tab per pattern piece, from the manifest --></div>
 
       <div class="error-banner" id="errorBanner"></div>
 
@@ -673,17 +625,13 @@
           <div class="spinner" id="loadingSpinner"></div>
           <span class="placeholder-text" id="placeholderText">Loading Python runtime…</span>
         </div>
-        <div class="svg-container" id="svgFront" style="display:none"></div>
-        <div class="svg-container" id="svgBack"  style="display:none"></div>
-        <div class="svg-container" id="svgSleeve" style="display:none"></div>
+        <div id="svgViews" style="display:contents"><!-- one container per piece --></div>
       </div>
 
       <div class="download-bar" id="downloadBar">
-        <button class="btn btn-accent" id="btnDlFront">↓ Front</button>
-        <button class="btn btn-accent" id="btnDlBack">↓ Back</button>
-        <button class="btn btn-accent" id="btnDlSleeve" style="display:none">↓ Sleeve</button>
+        <span id="dlButtons" style="display:contents"><!-- one button per piece --></span>
         <span class="dl-spacer"></span>
-        <button class="btn btn-secondary" id="btnDlBoth">↓ Combined SVG</button>
+        <button class="btn btn-secondary" id="btnDlCombined">↓ Combined SVG</button>
       </div>
 
     </div><!-- /panel-right -->
@@ -703,21 +651,28 @@
     });
 
     /* ── State ───────────────────────────────────────────────────────────── */
-    let pyodide   = null;
-    let svgData   = { front: null, back: null, sleeve: null };
-    let svgDims   = { front: [0, 0], back: [0, 0], sleeve: [0, 0] };
-    let activeTab = 'front';
+    let pyodide        = null;
+    let pyodideReady   = false;
+    let PATTERNS       = {};      // pattern id → manifest
+    let currentPattern = null;    // manifest of the selected pattern
+    let svgData        = {};      // piece id → svg string (last generation)
+    let svgDims        = {};      // piece id → [w_in, h_in]
+    let activeTab      = null;    // piece id
+
+    const $ = id => document.getElementById(id);
 
     /* ── Helpers ─────────────────────────────────────────────────────────── */
     function setStatus(label, state) {
-      document.getElementById('statusDot').className   = 'status-dot ' + state;
-      document.getElementById('statusLabel').textContent = label;
+      $('statusDot').className     = 'status-dot ' + state;
+      $('statusLabel').textContent = label;
     }
 
     function showTab(tab) {
-      document.getElementById('svgFront').style.display  = tab === 'front'  ? 'block' : 'none';
-      document.getElementById('svgBack').style.display   = tab === 'back'   ? 'block' : 'none';
-      document.getElementById('svgSleeve').style.display = tab === 'sleeve' ? 'block' : 'none';
+      activeTab = tab;
+      for (const piece of currentPattern.pieces)
+        $('svg-' + piece.id).style.display = piece.id === tab ? 'block' : 'none';
+      document.querySelectorAll('#tabs .tab').forEach(b =>
+        b.classList.toggle('active', b.dataset.tab === tab));
     }
 
     function downloadSVG(svgStr, filename) {
@@ -730,19 +685,102 @@
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
 
-    /* ── Tabs ────────────────────────────────────────────────────────────── */
-    document.querySelectorAll('.tab').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        activeTab = btn.dataset.tab;
-        showTab(activeTab);
+    function el(tag, attrs = {}, children = []) {
+      const node = document.createElement(tag);
+      for (const [k, v] of Object.entries(attrs)) {
+        if (k === 'text') node.textContent = v;
+        else if (v !== undefined && v !== null) node.setAttribute(k, v);
+      }
+      for (const c of children) node.appendChild(c);
+      return node;
+    }
+
+    /* ── Pattern UI (built from the manifest) ────────────────────────────── */
+    function buildMeasurementFields(p) {
+      const root = $('measureFields');
+      root.innerHTML = '';
+      p.measurementGroups.forEach((grp, gi) => {
+        if (gi > 0) root.appendChild(el('hr', { class: 'form-divider' }));
+        if (grp.hint) root.appendChild(el('p', { class: 'hint-text', text: grp.hint }));
+        const grid = el('div', { class: 'form-grid' });
+        for (const f of grp.fields) {
+          const label = el('label', { for: 'inp-' + f.key, title: f.title, text: f.label });
+          const input = el('input', {
+            type: 'number', id: 'inp-' + f.key, step: f.step, min: f.min,
+            max: f.max, inputmode: 'decimal',
+          });
+          if (grp.required) input.value = f.default ?? '';
+          else input.placeholder = '—';
+          grid.appendChild(el('div', { class: 'form-group' }, [label, input]));
+        }
+        root.appendChild(grid);
       });
+    }
+
+    function buildPatternOptions(p) {
+      const root = $('patternOptions');
+      root.innerHTML = '';
+      for (const opt of p.options || []) {
+        const cb = el('input', { type: 'checkbox', id: 'inp-' + opt.key });
+        cb.checked = !!opt.default;
+        const label = el('label', { for: 'inp-' + opt.key, text: opt.label });
+        root.appendChild(el('div', { class: 'cb-row' }, [cb, label]));
+      }
+    }
+
+    function buildPieceViews(p) {
+      $('tabs').innerHTML     = '';
+      $('svgViews').innerHTML = '';
+      $('dlButtons').innerHTML = '';
+      p.pieces.forEach((piece, i) => {
+        $('tabs').appendChild(el('button', {
+          class: 'tab' + (i === 0 ? ' active' : ''),
+          'data-tab': piece.id, text: piece.label,
+        }));
+        const view = el('div', { class: 'svg-container', id: 'svg-' + piece.id });
+        view.style.display = 'none';
+        $('svgViews').appendChild(view);
+        const btn = el('button', { class: 'btn btn-accent', id: 'dl-' + piece.id,
+                                   text: '↓ ' + piece.label });
+        btn.addEventListener('click', () => {
+          if (!svgData[piece.id]) return;
+          const [w, h] = svgDims[piece.id];
+          downloadSVG(svgData[piece.id], dlFilename(piece.id, w, h));
+        });
+        $('dlButtons').appendChild(btn);
+      });
+      activeTab = p.pieces.length ? p.pieces[0].id : null;
+    }
+
+    function selectPattern(id) {
+      currentPattern = PATTERNS[id];
+      $('patternSource').textContent = currentPattern.source || '';
+      buildMeasurementFields(currentPattern);
+      buildPatternOptions(currentPattern);
+      buildPieceViews(currentPattern);
+      $('btnRandom').style.display =
+        (currentPattern.testSizes || []).length ? '' : 'none';
+      $('sizeTag').classList.remove('visible');
+      // reset preview
+      svgData = {}; svgDims = {};
+      $('downloadBar').classList.remove('visible');
+      $('errorBanner').classList.remove('visible');
+      $('previewPlaceholder').style.display = 'flex';
+      if (pyodideReady) {
+        $('loadingSpinner').style.display = 'none';
+        $('placeholderText').textContent = 'Enter measurements and click Generate.';
+      }
+    }
+
+    /* ── Tabs (delegated — tabs are rebuilt per pattern) ─────────────────── */
+    $('tabs').addEventListener('click', e => {
+      const btn = e.target.closest('.tab');
+      if (btn) showTab(btn.dataset.tab);
     });
 
     /* ── Seam allowance presets ──────────────────────────────────────────── */
-    const seam = document.getElementById('inp-seam');
-    document.getElementById('saPresets').addEventListener('click', e => {
+    const seam = $('inp-seam');
+    $('saPresets').addEventListener('click', e => {
       const pill = e.target.closest('.sa-pill');
       if (!pill) return;
       seam.value = pill.dataset.sa;
@@ -753,6 +791,25 @@
       document.querySelectorAll('.sa-pill').forEach(p =>
         p.classList.toggle('active', p.dataset.sa === seam.value));
     });
+
+    /* ── Manifest loading ────────────────────────────────────────────────── */
+    async function fetchJSON(url) {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error(`${url} fetch failed (${r.status})`);
+      return r.json();
+    }
+
+    async function loadPatterns() {
+      const index = await fetchJSON('./patterns/index.json');
+      for (const id of index.patterns)
+        PATTERNS[id] = await fetchJSON(`./patterns/${id}/manifest.json`);
+      const sel = $('patternSelect');
+      sel.innerHTML = '';
+      for (const p of Object.values(PATTERNS))
+        sel.appendChild(el('option', { value: p.id, text: p.name }));
+      sel.addEventListener('change', () => selectPattern(sel.value));
+      selectPattern(index.patterns[0]);
+    }
 
     /* ── Pyodide init ────────────────────────────────────────────────────── */
     async function initPyodide() {
@@ -766,123 +823,99 @@
       await pyodide.loadPackage('numpy');
 
       setStatus('loading pattern library…', 'loading');
-      const [blockSrc, renderSrc, sleeveSrc] = await Promise.all([
-        fetch('./block.py').then(r  => {
-          if (!r.ok) throw new Error(`block.py fetch failed (${r.status})`);
+      const files = ['render.py', 'geometry.py', 'patterns/__init__.py'];
+      for (const p of Object.values(PATTERNS))
+        for (const f of p.files) files.push(`patterns/${p.id}/${f}`);
+      const sources = await Promise.all(files.map(f =>
+        fetch(`./${f}`).then(r => {
+          if (!r.ok) throw new Error(`${f} fetch failed (${r.status})`);
           return r.text();
-        }),
-        fetch('./render.py').then(r => {
-          if (!r.ok) throw new Error(`render.py fetch failed (${r.status})`);
-          return r.text();
-        }),
-        fetch('./sleeve.py').then(r => {
-          if (!r.ok) throw new Error(`sleeve.py fetch failed (${r.status})`);
-          return r.text();
-        }),
-      ]);
+        })
+      ));
 
-      pyodide.FS.writeFile('/home/pyodide/block.py',  blockSrc);
-      pyodide.FS.writeFile('/home/pyodide/render.py', renderSrc);
-      pyodide.FS.writeFile('/home/pyodide/sleeve.py', sleeveSrc);
+      for (const id of Object.keys(PATTERNS))
+        pyodide.FS.mkdirTree(`/home/pyodide/patterns/${id}`);
+      files.forEach((f, i) =>
+        pyodide.FS.writeFile(`/home/pyodide/${f}`, sources[i]));
 
       await pyodide.runPythonAsync(`
-import sys
+import sys, importlib
 sys.path.insert(0, '/home/pyodide')
-import block
 import render
-import sleeve
+for _pattern_id in ${JSON.stringify(Object.keys(PATTERNS))}:
+    importlib.import_module('patterns.' + _pattern_id)
       `);
 
+      pyodideReady = true;
       setStatus('ready', 'ready');
-      document.getElementById('btnGenerate').disabled = false;
-      document.getElementById('loadingSpinner').style.display  = 'none';
-      document.getElementById('placeholderText').textContent =
-        'Enter measurements and click Generate.';
+      $('btnGenerate').disabled = false;
+      $('loadingSpinner').style.display = 'none';
+      $('placeholderText').textContent = 'Enter measurements and click Generate.';
     }
 
     /* ── Generate ────────────────────────────────────────────────────────── */
+    function collectParams(p) {
+      const params = {};
+      const errors = [];
+      for (const grp of p.measurementGroups) {
+        const vals = {};
+        for (const f of grp.fields) {
+          const raw = $('inp-' + f.key).value.trim();
+          const v   = parseFloat(raw);
+          if (raw !== '' && !isNaN(v)) vals[f.key] = v;
+        }
+        const filled = Object.keys(vals).length;
+        if (!grp.required && filled === 0) continue;
+        if (filled < grp.fields.length) {
+          const missing = grp.fields.filter(f => !(f.key in vals))
+                                    .map(f => f.label.toLowerCase());
+          errors.push(grp.required
+            ? `Invalid value for ${missing.join(', ')}`
+            : `${grp.label} measurements are optional, but fill in either all or none (missing: ${missing.join(', ')})`);
+          continue;
+        }
+        const bad = grp.fields.filter(f => vals[f.key] < 0)
+                              .map(f => f.label.toLowerCase());
+        if (bad.length) { errors.push(`Invalid value for ${bad.join(', ')}`); continue; }
+        Object.assign(params, vals);
+      }
+      for (const opt of p.options || [])
+        params[opt.key] = $('inp-' + opt.key).checked;
+      const sa = parseFloat($('inp-seam').value || '0');
+      if (isNaN(sa) || sa < 0) errors.push('Invalid value for seam allowance');
+      else params.seam_allowance = sa;
+      params.white_fill = $('inp-white').checked;
+      return { params, errors };
+    }
+
     async function generate() {
-      const btn = document.getElementById('btnGenerate');
+      const btn = $('btnGenerate');
       btn.disabled = true;
       btn.textContent = 'Generating…';
 
-      const errorBanner = document.getElementById('errorBanner');
+      const errorBanner = $('errorBanner');
       errorBanner.classList.remove('visible');
 
-      document.getElementById('previewPlaceholder').style.display = 'flex';
-      document.getElementById('loadingSpinner').style.display = 'block';
-      document.getElementById('placeholderText').textContent = 'Generating pattern…';
-      document.getElementById('svgFront').style.display = 'none';
-      document.getElementById('svgBack').style.display  = 'none';
-      document.getElementById('svgSleeve').style.display = 'none';
-      document.getElementById('downloadBar').classList.remove('visible');
+      $('previewPlaceholder').style.display = 'flex';
+      $('loadingSpinner').style.display = 'block';
+      $('placeholderText').textContent = 'Generating pattern…';
+      for (const piece of currentPattern.pieces)
+        $('svg-' + piece.id).style.display = 'none';
+      $('downloadBar').classList.remove('visible');
       setStatus('generating…', 'loading');
 
       try {
-        const vals = {
-          alpha:   parseFloat(document.getElementById('inp-alpha').value),
-          beta:    parseFloat(document.getElementById('inp-beta').value),
-          gamma:   parseFloat(document.getElementById('inp-gamma').value),
-          delta:   parseFloat(document.getElementById('inp-delta').value),
-          epsilon: parseFloat(document.getElementById('inp-epsilon').value),
-          zeta:    parseFloat(document.getElementById('inp-zeta').value),
-          eta:     parseFloat(document.getElementById('inp-eta').value),
-          theta:   parseFloat(document.getElementById('inp-theta').value),
-          seam:    parseFloat(document.getElementById('inp-seam').value || '0'),
-          fold:    document.getElementById('inp-fold').checked,
-          deepen:  document.getElementById('inp-deepen').checked,
-          white:   document.getElementById('inp-white').checked,
-          sigma:   parseFloat(document.getElementById('inp-sigma').value),
-          upsilon: parseFloat(document.getElementById('inp-upsilon').value),
-          omega:   parseFloat(document.getElementById('inp-omega').value),
-          xi:      parseFloat(document.getElementById('inp-xi').value),
-          psi:     parseFloat(document.getElementById('inp-psi').value),
-        };
+        const { params, errors } = collectParams(currentPattern);
+        if (errors.length) throw new Error(errors.join('\n'));
 
-        const hasSleeve = !isNaN(vals.sigma) && !isNaN(vals.upsilon) &&
-                          !isNaN(vals.omega) && !isNaN(vals.xi) && !isNaN(vals.psi);
-
-        // Validate before sending to Python
-        const FIELD_LABELS = {
-          alpha: 'waist', beta: 'bust', gamma: 'back length', delta: 'neck–shoulder',
-          epsilon: 'shoulder–bust point', zeta: 'bust point to bust point', eta: 'front width', theta: 'back width',
-        };
-        const SLEEVE_FIELDS = ['sigma', 'upsilon', 'omega', 'xi', 'psi'];
-        for (const [k, v] of Object.entries(vals)) {
-          if (k === 'fold' || k === 'deepen' || k === 'white') continue;
-          if (SLEEVE_FIELDS.includes(k) && !hasSleeve) continue;
-          if (isNaN(v) || v < 0)
-            throw new Error(`Invalid value for ${FIELD_LABELS[k] || k}`);
-        }
-
+        // Every pattern module exposes render_web(params) → {piece_id: svg, …}
+        pyodide.globals.set('_params_json', JSON.stringify(params));
         const pyResult = await pyodide.runPythonAsync(`
-import json
-_r = render.render_svgs(
-    ${vals.alpha}, ${vals.beta}, ${vals.gamma}, ${vals.delta},
-    ${vals.epsilon}, ${vals.zeta}, ${vals.eta}, ${vals.theta},
-    fold=${vals.fold ? 'True' : 'False'},
-    seam_allowance=${vals.seam},
-    deepen_bust_dart=${vals.deepen ? 'True' : 'False'},
-    white_fill=${vals.white ? 'True' : 'False'}
-)
-${hasSleeve ? `
-_s = sleeve.render_svg(
-    ${vals.sigma}, ${vals.upsilon}, ${vals.omega}, ${vals.xi}, ${vals.psi},
-    seam_allowance=${vals.seam},
-    white_fill=${vals.white ? 'True' : 'False'}
-)
-_r.update(_s)
-` : ''}
-json.dumps(_r)
+import json, importlib
+_mod = importlib.import_module('patterns.${currentPattern.id}')
+json.dumps(_mod.render_web(json.loads(_params_json)))
         `);
-
         const result = JSON.parse(pyResult);
-        svgData.front = result.front;
-        svgData.back  = result.back;
-        svgData.sleeve = result.sleeve || null;
-        svgDims.front = [result.front_w, result.front_h];
-        svgDims.back  = [result.back_w,  result.back_h];
-        if (result.sleeve) svgDims.sleeve = [result.sleeve_w, result.sleeve_h];
 
         // Strip @import and explicit px dimensions so viewBox drives scaling
         const clean = s => s
@@ -890,33 +923,37 @@ json.dumps(_r)
           .replace(/(<svg[^>]*?)\s+width="\d+"/, '$1')
           .replace(/(<svg[^>]*?)\s+height="\d+"/, '$1');
 
-        document.getElementById('svgFront').innerHTML = clean(svgData.front);
-        document.getElementById('svgBack').innerHTML  = clean(svgData.back);
-        if (svgData.sleeve) {
-          document.getElementById('svgSleeve').innerHTML = clean(svgData.sleeve);
-        } else {
-          document.getElementById('svgSleeve').innerHTML = '';
+        svgData = {}; svgDims = {};
+        for (const piece of currentPattern.pieces) {
+          const has = !!result[piece.id];
+          if (has) {
+            svgData[piece.id] = result[piece.id];
+            svgDims[piece.id] = [result[piece.id + '_w'], result[piece.id + '_h']];
+            $('svg-' + piece.id).innerHTML = clean(result[piece.id]);
+          } else {
+            $('svg-' + piece.id).innerHTML = '';
+          }
+          document.querySelector(`#tabs .tab[data-tab="${piece.id}"]`)
+            .style.display = has ? '' : 'none';
+          $('dl-' + piece.id).style.display = has ? '' : 'none';
+        }
+        $('btnDlCombined').style.display =
+          Object.keys(svgData).length > 1 ? '' : 'none';
+        if (!svgData[activeTab]) {
+          const firstWithSvg = currentPattern.pieces.find(pc => svgData[pc.id]);
+          activeTab = firstWithSvg ? firstWithSvg.id : null;
         }
 
-        // Show/hide sleeve tab and download button
-        const sleeveTab = document.querySelector('.tab[data-tab="sleeve"]');
-        sleeveTab.style.display = svgData.sleeve ? '' : 'none';
-        document.getElementById('btnDlSleeve').style.display = svgData.sleeve ? '' : 'none';
-        if (!svgData.sleeve && activeTab === 'sleeve') {
-          activeTab = 'front';
-          document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === 'front'));
-        }
-
-        document.getElementById('previewPlaceholder').style.display = 'none';
-        document.getElementById('downloadBar').classList.add('visible');
-        showTab(activeTab);
+        $('previewPlaceholder').style.display = 'none';
+        $('downloadBar').classList.add('visible');
+        if (activeTab) showTab(activeTab);
         setStatus('ready', 'ready');
 
       } catch (err) {
         errorBanner.textContent = '⚠ ' + (err.message || String(err));
         errorBanner.classList.add('visible');
-        document.getElementById('loadingSpinner').style.display = 'none';
-        document.getElementById('placeholderText').textContent = 'Generation failed.';
+        $('loadingSpinner').style.display = 'none';
+        $('placeholderText').textContent = 'Generation failed.';
         setStatus('error', 'error');
         console.error(err);
       } finally {
@@ -925,135 +962,98 @@ json.dumps(_r)
       }
     }
 
-    document.getElementById('btnGenerate').addEventListener('click', generate);
+    $('btnGenerate').addEventListener('click', generate);
 
-    // Enter key in any input triggers generate
-    document.querySelectorAll('input[type="number"]').forEach(inp =>
-      inp.addEventListener('keydown', e => {
-        if (e.key === 'Enter' && !document.getElementById('btnGenerate').disabled)
-          generate();
-      })
-    );
+    // Enter key in any number input triggers generate (delegated — the
+    // measurement fields are rebuilt when the pattern changes)
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && e.target.matches('input[type="number"]') &&
+          !$('btnGenerate').disabled)
+        generate();
+    });
 
     /* ── Downloads ───────────────────────────────────────────────────────── */
     const DL_DPI = 300;
     function dlFilename(piece, w, h) {
-      return `bodice_block_${piece}_${w}x${h}.svg`;
+      return `${currentPattern.id}_block_${piece}_${w}x${h}.svg`;
     }
-    function buildCombinedSVG() {
-      const GAP_IN   = 0.5;
-      const [fw, fh] = svgDims.front;
-      const [bw, bh] = svgDims.back;
-      const totalWpx = (fw + GAP_IN + bw) * DL_DPI;
-      const totalHpx = Math.max(fh, bh) * DL_DPI;
-      const frontY   = ((Math.max(fh, bh) - fh) / 2) * DL_DPI;
-      const backX    = (fw + GAP_IN) * DL_DPI;
-      const backY    = ((Math.max(fh, bh) - bh) / 2) * DL_DPI;
-      const fpx = fw * DL_DPI, fhpx = fh * DL_DPI;
-      const bpx = bw * DL_DPI, bhpx = bh * DL_DPI;
+    function buildCombinedSVG(pieceIds) {
+      const GAP_IN = 0.5;
+      const dims   = pieceIds.map(id => svgDims[id]);
+      const totalW = dims.reduce((acc, [w]) => acc + w, 0)
+                     + GAP_IN * (pieceIds.length - 1);
+      const totalH = Math.max(...dims.map(([, h]) => h));
       // Strip the XML declaration from each piece — nested SVGs must not have it
       const strip = s => s.replace(/<\?xml[^?]*\?>\s*/i, '');
-      return [
+      const parts = [
         `<?xml version="1.0" encoding="UTF-8"?>`,
-        `<svg xmlns="http://www.w3.org/2000/svg" width="${totalWpx}" height="${totalHpx}"`,
-        `     viewBox="0 0 ${totalWpx} ${totalHpx}">`,
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW * DL_DPI}" height="${totalH * DL_DPI}"`,
+        `     viewBox="0 0 ${totalW * DL_DPI} ${totalH * DL_DPI}">`,
         `  <rect width="100%" height="100%" fill="white"/>`,
-        `  <svg x="0" y="${frontY}" width="${fpx}" height="${fhpx}"`,
-        `       viewBox="0 0 ${fpx} ${fhpx}">`,
-        strip(svgData.front),
-        `  </svg>`,
-        `  <svg x="${backX}" y="${backY}" width="${bpx}" height="${bhpx}"`,
-        `       viewBox="0 0 ${bpx} ${bhpx}">`,
-        strip(svgData.back),
-        `  </svg>`,
-        `</svg>`,
-      ].join('\n');
+      ];
+      let x = 0;
+      for (const id of pieceIds) {
+        const [w, h] = svgDims[id];
+        const y = ((totalH - h) / 2) * DL_DPI;
+        parts.push(
+          `  <svg x="${x * DL_DPI}" y="${y}" width="${w * DL_DPI}" height="${h * DL_DPI}"`,
+          `       viewBox="0 0 ${w * DL_DPI} ${h * DL_DPI}">`,
+          strip(svgData[id]),
+          `  </svg>`,
+        );
+        x += w + GAP_IN;
+      }
+      parts.push(`</svg>`);
+      return { svg: parts.join('\n'), totalW, totalH };
     }
-    document.getElementById('btnDlFront').addEventListener('click', () => {
-      if (svgData.front) {
-        const [w, h] = svgDims.front;
-        downloadSVG(svgData.front, dlFilename('front', w, h));
-      }
-    });
-    document.getElementById('btnDlBack').addEventListener('click', () => {
-      if (svgData.back) {
-        const [w, h] = svgDims.back;
-        downloadSVG(svgData.back, dlFilename('back', w, h));
-      }
-    });
-    document.getElementById('btnDlSleeve').addEventListener('click', () => {
-      if (svgData.sleeve) {
-        const [w, h] = svgDims.sleeve;
-        downloadSVG(svgData.sleeve, `sleeve_block_${w}x${h}.svg`);
-      }
-    });
-    document.getElementById('btnDlBoth').addEventListener('click', () => {
-      if (!svgData.front || !svgData.back) return;
-      const [fw, fh] = svgDims.front;
-      const [bw, bh] = svgDims.back;
-      const totalW = fw + 0.5 + bw;
-      const totalH = Math.max(fh, bh);
-      downloadSVG(buildCombinedSVG(), dlFilename('combined', totalW, totalH));
+    $('btnDlCombined').addEventListener('click', () => {
+      const ids = currentPattern.pieces.map(pc => pc.id).filter(id => svgData[id]);
+      if (!ids.length) return;
+      const { svg, totalW, totalH } = buildCombinedSVG(ids);
+      downloadSVG(svg, dlFilename('combined', totalW, totalH));
     });
 
-    /* ── Random size fill ─────────────────────────────────────────────────── */
-    const TEST_SIZES = [
-      { a:24, b:32, g:14.5,  d:4.5,  e:8.0,  z:6.5, n:12.5, t:12.5, si:22,   u:9,  w:16,  xi:14, ps:5.5, label:'XS' },
-      { a:26, b:34, g:15.0,  d:4.75, e:8.5,  z:7.0, n:13.0, t:13.0, si:22.5, u:9.5,w:16.5,xi:15, ps:5.75,label:'S' },
-      { a:28, b:36, g:15.5,  d:5.0,  e:9.0,  z:7.0, n:14.0, t:14.0, si:23,   u:10, w:17,  xi:16, ps:6,   label:'M' },
-      { a:30, b:38, g:16.0,  d:5.25, e:9.5,  z:7.5, n:14.5, t:14.5, si:23.5, u:10, w:17.5,xi:17, ps:6.25,label:'L' },
-      { a:32, b:40, g:16.0,  d:5.25, e:10.0, z:8.0, n:15.0, t:14.5, si:24,   u:10.5,w:18, xi:18, ps:6.5, label:'XL' },
-      { a:34, b:42, g:16.5,  d:5.5,  e:10.5, z:8.5, n:15.5, t:15.0, si:24.5, u:11, w:18.5,xi:19, ps:6.75,label:'2XL' },
-      { a:25, b:33, g:13.5,  d:4.25, e:7.5,  z:6.5, n:12.5, t:12.5, si:21,   u:8.5,w:15,  xi:14, ps:5.5, label:'petite S' },
-      { a:27, b:35, g:17.5,  d:5.0,  e:9.0,  z:7.0, n:13.5, t:13.5, si:24.5, u:11, w:18.5,xi:15.5,ps:6,  label:'tall S' },
-      { a:26, b:40, g:15.5,  d:5.0,  e:9.5,  z:7.5, n:14.5, t:14.0, si:23,   u:10, w:17,  xi:17, ps:6,   label:'hourglass' },
-      { a:30, b:44, g:16.0,  d:5.25, e:10.5, z:9.0, n:15.5, t:15.0, si:23.5, u:10.5,w:17.5,xi:18.5,ps:6.5,label:'full bust' },
-    ];
-
+    /* ── Random size fill ────────────────────────────────────────────────── */
     const SA_VALUES = ['0', '0.375', '0.5', '0.625', '0.75', '1', '1.25'];
     let _lastRandIdx = -1;
     function randomFill() {
+      const sizes = currentPattern.testSizes || [];
+      if (!sizes.length) return;
       let idx;
-      do { idx = Math.floor(Math.random() * TEST_SIZES.length); }
-      while (idx === _lastRandIdx && TEST_SIZES.length > 1);
+      do { idx = Math.floor(Math.random() * sizes.length); }
+      while (idx === _lastRandIdx && sizes.length > 1);
       _lastRandIdx = idx;
-      const s = TEST_SIZES[idx];
-      document.getElementById('inp-alpha').value   = s.a;
-      document.getElementById('inp-beta').value    = s.b;
-      document.getElementById('inp-gamma').value   = s.g;
-      document.getElementById('inp-delta').value   = s.d;
-      document.getElementById('inp-epsilon').value = s.e;
-      document.getElementById('inp-zeta').value    = s.z;
-      document.getElementById('inp-eta').value     = s.n;
-      document.getElementById('inp-theta').value   = s.t;
-      document.getElementById('inp-sigma').value   = s.si;
-      document.getElementById('inp-upsilon').value = s.u;
-      document.getElementById('inp-omega').value   = s.w;
-      document.getElementById('inp-xi').value      = s.xi;
-      document.getElementById('inp-psi').value     = s.ps;
-      const tag = document.getElementById('sizeTag');
+      const s = sizes[idx];
+      for (const [key, val] of Object.entries(s.values)) {
+        const inp = $('inp-' + key);
+        if (inp) inp.value = val;
+      }
+      const tag = $('sizeTag');
       tag.textContent = s.label;
       tag.classList.add('visible');
       // pick a random seam allowance from the preset buttons
       const saVal = SA_VALUES[Math.floor(Math.random() * SA_VALUES.length)];
-      document.getElementById('inp-seam').value = saVal;
+      $('inp-seam').value = saVal;
       document.querySelectorAll('.sa-pill').forEach(p =>
         p.classList.toggle('active', p.dataset.sa === saVal));
     }
-    document.getElementById('btnRandom').addEventListener('click', randomFill);
-    // Clear size tag when user manually edits any measurement
-    document.querySelectorAll('#inp-alpha,#inp-beta,#inp-gamma,#inp-delta,#inp-epsilon,#inp-zeta,#inp-eta,#inp-theta,#inp-sigma,#inp-upsilon,#inp-omega,#inp-xi,#inp-psi')
-      .forEach(inp => inp.addEventListener('input', () =>
-        document.getElementById('sizeTag').classList.remove('visible')));
+    $('btnRandom').addEventListener('click', randomFill);
+    // Clear size tag when user manually edits any measurement (delegated)
+    $('measureFields').addEventListener('input', () =>
+      $('sizeTag').classList.remove('visible'));
 
     /* ── Boot ────────────────────────────────────────────────────────────── */
-    initPyodide().catch(err => {
-      setStatus('load failed', 'error');
-      document.getElementById('loadingSpinner').style.display = 'none';
-      document.getElementById('placeholderText').textContent =
-        'Failed to load Python runtime: ' + err.message;
-      console.error(err);
-    });
+    (async () => {
+      try {
+        await loadPatterns();   // manifests drive the form, tabs, and downloads
+        await initPyodide();    // then load the runtime + pattern modules
+      } catch (err) {
+        setStatus('load failed', 'error');
+        $('loadingSpinner').style.display = 'none';
+        $('placeholderText').textContent = 'Failed to load: ' + err.message;
+        console.error(err);
+      }
+    })();
   </script>
 </body>
 </html>

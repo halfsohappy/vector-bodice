@@ -1,66 +1,19 @@
-import argparse
+"""Master rendering engine.
+
+Pattern-agnostic: takes piece outlines (lists of ("line" | "dart" |
+"quadratic" | "cubic_curve") segments) plus per-piece render settings and
+produces SVG.  All pattern-specific knowledge — drafting math, colours,
+label sets, offset tables, seam-allowance rules — lives in the pattern
+folders under patterns/.
+"""
+
 import numpy as np
-from block import build
 
 SCALE         = 300          # px per inch (300 DPI)
 MARGIN_INCHES = 0.5          # half-inch whitespace border around bodice
 LABEL_OFFSET  = 87           # px — fallback inward push toward interior
 FONT_SIZE     = 34           # px
 FONT_FAMILY   = "monospace"
-
-# ── Per-label offset tables ───────────────────────────────────────────────────
-# All values in model-space inches (dx rightward, dy upward).
-# SVG y is flipped in _label_elements, so dy upward → negative SVG dy.
-# Back and front use separate tables because shared points (e.g. O) sit on
-# opposite sides of their respective pieces.
-
-_BACK_LABEL_OFFSETS = {
-    "A":   ( 0.71, -0.71),  # nape (315°)
-    "GG":  ( 0.71,  0.71),  # bottom-left corner (45°)
-    "AA":  ( 0.42, -0.91),  # above nape, neck RHS (295°)
-    "DD":  (-0.87, -0.50),  # shoulder tip (210°)
-    "BB":  (-1.00,  0.00),  # upper armhole (180°)
-    "O":   (-0.77, -0.64),  # side seam top (220°)
-    "FF":  (-0.64,  0.77),  # side seam bottom (130°)
-    "XX":  (-0.71,  0.71),  # back dart left base (135°)
-    "YY":  ( 0.71,  0.71),  # back dart right base (45°)
-    "ZZ":  ( 0.45,  0.00),  # dart tip → right (already optimal)
-}
-
-_FRONT_LABEL_OFFSETS = {
-    "M":   (-0.71, -0.71),  # CF neck corner (225°)
-    "D":   (-0.45,  0.38),  # CF waist corner (already optimal)
-    "K":   (-0.57, -0.82),  # front neck curve (235°)
-    "N":   ( 0.91, -0.42),  # shoulder tip (335°)
-    "P":   ( 1.00,  0.00),  # lower armhole transition (0°)
-    "O":   ( 0.71, -0.71),  # side seam top (315°)
-    "Q":   ( 0.64,  0.77),  # side seam base (50°)
-    "V":   ( 0.87, -0.50),  # bust dart lower (330°)
-    "T":   ( 0.87,  0.50),  # bust dart upper (30°)
-    "UU":  ( 0.64,  0.77),  # bust dart upper base (50°)
-    "VV":  (-0.64,  0.77),  # waist dart left base (130°)
-    "WW":  ( 0.64,  0.77),  # waist dart right base (50°)
-    "W":   (-0.45,  0.00),  # waist dart tip (already optimal)
-    "S":   ( 0.40,  0.00),  # bust point (already optimal)
-}
-
-_INTERIOR_LABEL_OFFSETS = {
-    # Construction-rectangle reference points. Offsets chosen so text lands
-    # inside whichever piece the dot appears in.
-    "B":   ( 0.40,  0.35),  # bottom-left corner → right and up
-    "C":   (-0.40, -0.35),  # top-right corner → left and down
-    "E":   (-0.35, -0.40),  # top of vertical centerline → left and down
-    "F":   ( 0.35,  0.40),  # bottom of vertical centerline → right and up
-    "G":   ( 0.40,  0.00),  # left of upper horizontal → right
-    "H":   (-0.40,  0.00),  # right of upper horizontal → left
-    "I":   ( 0.40,  0.00),  # left of middle horizontal → right
-    "J":   (-0.40,  0.00),  # right of middle horizontal → left
-    "R":   ( 0.40, -0.25),  # shoulder midpoint → right and slightly down
-    "U":   ( 0.40,  0.00),  # bust dart apex → right
-    "EE":  ( 0.40,  0.35),  # waist curve reference → right and up
-    "CC":  (-0.40, -0.35),  # armhole reference (above BB) → left and down
-}
-
 
 # ── Label-tightening helpers ─────────────────────────────────────────────────
 
@@ -318,7 +271,7 @@ def _offset_open_polyline(pts, distance, centroid):
     return np.array(offset)
 
 
-def _mirror_point(pt, fold_line_x):
+def mirror_point(pt, fold_line_x):
     """Mirror a point across a vertical fold line at x = fold_line_x."""
     pt = np.asarray(pt, float)
     mirrored = pt.copy()
@@ -330,32 +283,33 @@ def _mirror_segment(seg, fold_line_x):
     """Mirror a segment across a vertical fold line. Returns mirrored segment."""
     if seg[0] == "line":
         _, p0, p1 = seg
-        return ("line", _mirror_point(p1, fold_line_x), _mirror_point(p0, fold_line_x))
+        return ("line", mirror_point(p1, fold_line_x), mirror_point(p0, fold_line_x))
     elif seg[0] == "dart":
         _, p0, p1 = seg
-        return ("dart", _mirror_point(p1, fold_line_x), _mirror_point(p0, fold_line_x))
+        return ("dart", mirror_point(p1, fold_line_x), mirror_point(p0, fold_line_x))
     elif seg[0] == "quadratic":
         _, p0, cp, p3 = seg
-        return ("quadratic", _mirror_point(p3, fold_line_x), _mirror_point(cp, fold_line_x), _mirror_point(p0, fold_line_x))
+        return ("quadratic", mirror_point(p3, fold_line_x), mirror_point(cp, fold_line_x), mirror_point(p0, fold_line_x))
     elif seg[0] == "cubic_curve":
         _, func, p0, p1 = seg
         # Create a mirrored function
         def mirrored_func(t):
             pt = func(1 - t)  # reverse parameterization
-            return _mirror_point(pt, fold_line_x)
-        return ("cubic_curve", mirrored_func, _mirror_point(p1, fold_line_x), _mirror_point(p0, fold_line_x))
+            return mirror_point(pt, fold_line_x)
+        return ("cubic_curve", mirrored_func, mirror_point(p1, fold_line_x), mirror_point(p0, fold_line_x))
     else:
         return seg
 
 
-def _fold_front_bodice(front_bodice, fold_line_x):
-    """Create a full-width front bodice by folding/mirroring.
-    Assumes front_bodice goes from fold line to edge. Returns full-width outline."""
+def fold_outline(outline, fold_line_x):
+    """Create a full-width piece by folding/mirroring across a vertical line.
+    Assumes the outline's first segment lies on the fold line. Returns the
+    full-width outline."""
     # Mirror all segments and reverse their order
-    mirrored = [_mirror_segment(seg, fold_line_x) for seg in reversed(front_bodice)]
-    # Remove the last segment of mirrored (which is the M-D fold line)
-    # and first segment of original (which is also M-D)
-    return mirrored[:-1] + front_bodice[1:]
+    mirrored = [_mirror_segment(seg, fold_line_x) for seg in reversed(outline)]
+    # Remove the last segment of mirrored (which is the fold-line edge)
+    # and first segment of original (which is the same fold-line edge)
+    return mirrored[:-1] + outline[1:]
 
 
 def _sample_bbox(segments):
@@ -739,199 +693,3 @@ def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
     with open(path, "w") as f:
         f.write(svg_string)
     print(f"Saved {path}  ({w_in} \u00d7 {h_in} in  /  {w:.0f} \u00d7 {h:.0f} px)")
-
-
-def render_svgs(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
-               fold=False, seam_allowance=0.75, deepen_bust_dart=False,
-               white_fill=False):
-    """Return {'front': svg_str, 'back': svg_str, ...}.  Used by the web interface."""
-    bk = build(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
-               deepen_bust_dart=deepen_bust_dart)
-
-    # A→GG (center back seam) must never have SA between 0 and 1 exclusive.
-    center_back_sa = 0.0 if seam_allowance == 0 else max(seam_allowance, 1.0)
-    a_pt = bk.A
-    def _back_sa_fn(run):
-        # The center-back run [XX, GG, A] ends at A
-        if np.allclose(run[-1], a_pt, atol=1e-4):
-            return center_back_sa
-        return seam_allowance
-
-    shared_interior = {
-        "B":  bk.B,  "C":  bk.C,
-        "E":  bk.E,  "F":  bk.F,  "G":  bk.G,
-        "H":  bk.H,  "I":  bk.I,  "J":  bk.J,
-        "R":  bk.R,
-        "U":  bk.U,  "EE": bk.EE, "CC": bk.CC,
-    }
-
-    front_outline = bk.front_bodice
-    front_labels = {
-        "D":  bk.D,  "M":  bk.M,  "K":  bk.K,  "N":  bk.N,
-        "P":  bk.P,  "O":  bk.O,  "Q":  bk.Q,
-        "T":  bk.T,  "V":  bk.V,  "W":  bk.W,
-        "UU": bk.UU, "VV": bk.VV, "WW": bk.WW,
-        "S":  bk.S,
-    }
-
-    if fold:
-        fold_line_x = bk.M[0]
-        front_outline = _fold_front_bodice(bk.front_bodice, fold_line_x)
-        front_labels = {
-            "M":  bk.M,  "D":  bk.D,
-            "K":  bk.K,  "N":  bk.N,
-            "P":  bk.P,  "O":  bk.O,  "Q":  bk.Q,
-            "T":  bk.T,  "V":  bk.V,  "W":  bk.W,
-            "UU": bk.UU, "VV": bk.VV, "WW": bk.WW,
-            "S":  bk.S,
-        }
-        for name, pt in list(front_labels.items()):
-            pt_arr = np.asarray(pt, float)
-            if abs(pt_arr[0] - fold_line_x) > 1e-4:
-                front_labels[name + "'"] = _mirror_point(pt_arr, fold_line_x)
-
-    back_svg, back_w, back_h = _write_svg(
-        None,
-        bk.back_bodice,
-        construction_lines=bk.construction_lines,
-        dart_lines=bk.back_dart_lines,
-        fill="white" if white_fill else "#dce8f5", stroke="#2255aa",
-        outline_labels={
-            "A":  bk.A,  "GG": bk.GG, "AA": bk.AA, "DD": bk.DD,
-            "BB": bk.BB, "O":  bk.O,  "FF": bk.FF,
-            "XX": bk.XX, "YY": bk.YY, "ZZ": bk.ZZ,
-        },
-        interior_labels=shared_interior,
-        seam_allowance=seam_allowance,
-        seam_allowance_fn=_back_sa_fn,
-        label_offsets={**_INTERIOR_LABEL_OFFSETS, **_BACK_LABEL_OFFSETS},
-    )
-
-    front_svg, front_w, front_h = _write_svg(
-        None,
-        front_outline,
-        construction_lines=bk.construction_lines,
-        dart_lines=bk.front_dart_lines,
-        fill="white" if white_fill else "#dac7ff", stroke="#7a6f8a",
-        outline_labels=front_labels,
-        interior_labels=shared_interior,
-        seam_allowance=seam_allowance,
-        label_offsets={**_INTERIOR_LABEL_OFFSETS, **_FRONT_LABEL_OFFSETS},
-    )
-
-    return {
-        'front': front_svg, 'back': back_svg,
-        'front_w': front_w, 'front_h': front_h,
-        'back_w': back_w, 'back_h': back_h,
-    }
-
-
-def render(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
-           prefix="bodice", fold=False, seam_allowance=0.75, deepen_bust_dart=False):
-    """Render bodice blocks to SVG.
-    
-    Args:
-        fold: If True, mirror front bodice on the M-D line to show full width
-        seam_allowance: Seam allowance in inches (default 0.75). The A→GG
-                       (center back) seam receives max(seam_allowance, 1.0),
-                       except when seam_allowance is exactly 0.
-        deepen_bust_dart: If True, add 0.5" to the bust dart depth from Chart 1.
-    """
-    bk = build(alpha, beta, gamma, delta, epsilon, zeta, eta, theta,
-               deepen_bust_dart=deepen_bust_dart)
-    
-    # A→GG (center back seam) must never have SA between 0 and 1 exclusive.
-    center_back_sa = 0.0 if seam_allowance == 0 else max(seam_allowance, 1.0)
-    a_pt = bk.A
-    def _back_sa_fn(run):
-        if np.allclose(run[-1], a_pt, atol=1e-4):
-            return center_back_sa
-        return seam_allowance
-
-    # Points shared by both views (construction rectangle corners + reference pts)
-    shared_interior = {
-        "B":  bk.B,  "C":  bk.C,
-        "E":  bk.E,  "F":  bk.F,  "G":  bk.G,
-        "H":  bk.H,  "I":  bk.I,  "J":  bk.J,
-        "R":  bk.R,
-        "U":  bk.U,  "EE": bk.EE, "CC": bk.CC,
-    }
-    
-    # Determine front bodice outline
-    front_outline = bk.front_bodice
-    front_labels = {
-        "D":  bk.D,  "M":  bk.M,  "K":  bk.K,  "N":  bk.N,
-        "P":  bk.P,  "O":  bk.O,  "Q":  bk.Q,
-        "T":  bk.T,  "V":  bk.V,  "W":  bk.W,
-        "UU": bk.UU, "VV": bk.VV, "WW": bk.WW,
-        "S":  bk.S,
-    }
-    
-    if fold:
-        fold_line_x = bk.M[0]  # = D[0] = center-front x
-        front_outline = _fold_front_bodice(bk.front_bodice, fold_line_x)
-        front_labels = {
-            "M":  bk.M,  "D":  bk.D,
-            "K":  bk.K,  "N":  bk.N,
-            "P":  bk.P,  "O":  bk.O,  "Q":  bk.Q,
-            "T":  bk.T,  "V":  bk.V,  "W":  bk.W,
-            "UU": bk.UU, "VV": bk.VV, "WW": bk.WW,
-            "S":  bk.S,
-        }
-        # Add primed mirrored labels for every point not sitting on the fold line
-        for name, pt in list(front_labels.items()):
-            pt_arr = np.asarray(pt, float)
-            if abs(pt_arr[0] - fold_line_x) > 1e-4:
-                front_labels[name + "'"] = _mirror_point(pt_arr, fold_line_x)
-
-    _write_svg(
-        f"{prefix}_back.svg",
-        bk.back_bodice,
-        construction_lines=bk.construction_lines,
-        dart_lines=bk.back_dart_lines,
-        fill="#dce8f5", stroke="#2255aa",
-        outline_labels={
-            "A":  bk.A,  "GG": bk.GG, "AA": bk.AA, "DD": bk.DD,
-            "BB": bk.BB, "O":  bk.O,  "FF": bk.FF,
-            "XX": bk.XX, "YY": bk.YY, "ZZ": bk.ZZ,
-        },
-        interior_labels=shared_interior,
-        seam_allowance=seam_allowance,
-        seam_allowance_fn=_back_sa_fn,
-        label_offsets={**_INTERIOR_LABEL_OFFSETS, **_BACK_LABEL_OFFSETS},
-    )
-
-    _write_svg(
-        f"{prefix}_front.svg",
-        front_outline,
-        construction_lines=bk.construction_lines,
-        dart_lines=bk.front_dart_lines,
-        fill="#dac7ff", stroke="#7a6f8a",
-        outline_labels=front_labels,
-        interior_labels=shared_interior,
-        seam_allowance=seam_allowance,
-        label_offsets={**_INTERIOR_LABEL_OFFSETS, **_FRONT_LABEL_OFFSETS},
-    )
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Render a bodice block to SVG.")
-    parser.add_argument("--alpha",   type=float, required=True, help="waist")
-    parser.add_argument("--beta",    type=float, required=True, help="bust")
-    parser.add_argument("--gamma",   type=float, required=True, help="back nape to waist")
-    parser.add_argument("--delta",   type=float, required=True, help="neck to shoulder")
-    parser.add_argument("--epsilon", type=float, required=True, help="shoulder center to bust point")
-    parser.add_argument("--zeta",    type=float, required=True, help="bust point to bust point")
-    parser.add_argument("--eta",     type=float, required=True, help="front width")
-    parser.add_argument("--theta",   type=float, required=True, help="back width")
-    parser.add_argument("--prefix",  type=str,   default="bodice", help="output filename prefix")
-    parser.add_argument("--fold",    action="store_true", help="render front bodice on fold (mirrored, full width)")
-    parser.add_argument("--seam-allowance", type=float, default=0.5, help="seam allowance in inches (default 0.75)")
-    args = parser.parse_args()
-
-    render(
-        alpha=args.alpha, beta=args.beta, gamma=args.gamma,
-        delta=args.delta, epsilon=args.epsilon, zeta=args.zeta,
-        eta=args.eta, theta=args.theta, prefix=args.prefix,
-        fold=args.fold, seam_allowance=args.seam_allowance,
-    )

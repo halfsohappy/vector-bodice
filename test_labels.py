@@ -10,17 +10,14 @@ lines, or the white page background — the only colour it can touch is the fill
 """
 
 import numpy as np
-from block import build
-from render import (
-    _BACK_LABEL_OFFSETS,
-    _FRONT_LABEL_OFFSETS,
-    _INTERIOR_LABEL_OFFSETS,
-    _sample_outline,
-)
-from sleeve import (
-    build as sleeve_build,
-    _SLEEVE_LABEL_OFFSETS,
-    _SLEEVE_INTERIOR_OFFSETS,
+from render import _sample_outline
+from patterns.bodice import build, build_sleeve as sleeve_build
+from patterns.bodice.settings import (
+    BACK_LABEL_OFFSETS as _BACK_LABEL_OFFSETS,
+    FRONT_LABEL_OFFSETS as _FRONT_LABEL_OFFSETS,
+    INTERIOR_LABEL_OFFSETS as _INTERIOR_LABEL_OFFSETS,
+    SLEEVE_LABEL_OFFSETS as _SLEEVE_LABEL_OFFSETS,
+    SLEEVE_INTERIOR_OFFSETS as _SLEEVE_INTERIOR_OFFSETS,
 )
 
 # ── Sleeve test sizes ─────────────────────────────────────────────────────────
@@ -133,7 +130,7 @@ def run_tests():
     for sz in SLEEVE_TEST_SIZES:
         sl = sleeve_build(sz["sigma"], sz["upsilon"], sz["omega"], sz["xi"], sz["psi"])
         tag = f"sleeve/{sz['label']}"
-        sleeve_poly = _sample_outline(sl.sleeve_outline)
+        sleeve_poly = _sample_outline(sl.outline)
         sleeve_offsets = {**_SLEEVE_INTERIOR_OFFSETS, **_SLEEVE_LABEL_OFFSETS}
 
         sleeve_outline_labels = {

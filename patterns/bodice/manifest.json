@@ -1,0 +1,63 @@
+{
+  "id": "bodice",
+  "name": "bodice & sleeve block",
+  "source": "derived from Costume Technician’s Handbook, 3rd Ed, Ingham/Covey p. 110–117, 137–139",
+  "files": [
+    "__init__.py",
+    "front_bodice.py",
+    "back_bodice.py",
+    "sleeve.py",
+    "settings.py"
+  ],
+  "measurementGroups": [
+    {
+      "id": "bodice",
+      "label": "Bodice",
+      "required": true,
+      "fields": [
+        { "key": "alpha",   "label": "Waist",                         "title": "Circumference at the natural waist",                                        "default": 28,   "min": 18, "max": 60, "step": 0.25 },
+        { "key": "beta",    "label": "Bust",                          "title": "Circumference at the fullest part of the bust",                             "default": 36,   "min": 24, "max": 72, "step": 0.25 },
+        { "key": "gamma",   "label": "Back nape to waist",            "title": "Distance down the back from base of neck (nape) to natural waist",          "default": 15.5, "min": 10, "max": 26, "step": 0.25 },
+        { "key": "delta",   "label": "Neck to shoulder",              "title": "Over the shoulder from base of neck to shoulder tip",                       "default": 5,    "min": 2,  "max": 10, "step": 0.25 },
+        { "key": "epsilon", "label": "Shoulder center to bust point", "title": "Straight from shoulder tip down to bust point (nipple level)",              "default": 9,    "min": 5,  "max": 16, "step": 0.25 },
+        { "key": "zeta",    "label": "Bust point to bust point",      "title": "Full distance between bust points, nipple to nipple",                       "default": 7,    "min": 3,  "max": 14, "step": 0.25 },
+        { "key": "eta",     "label": "Front width",                   "title": "Width of the front body from side seam to center front, at bust level",     "default": 14,   "min": 8,  "max": 24, "step": 0.25 },
+        { "key": "theta",   "label": "Back width",                    "title": "Width of the back body from side seam to center back, at bust level",       "default": 14,   "min": 8,  "max": 24, "step": 0.25 }
+      ]
+    },
+    {
+      "id": "sleeve",
+      "label": "Sleeve",
+      "required": false,
+      "hint": "Optional sleeve measurements. Leave blank to skip.",
+      "fields": [
+        { "key": "sigma",   "label": "Shoulder to wrist",  "title": "Shoulder to wrist length",   "min": 15, "max": 30, "step": 0.25 },
+        { "key": "upsilon", "label": "Underarm to elbow",  "title": "Underarm to elbow length",   "min": 5,  "max": 18, "step": 0.25 },
+        { "key": "omega",   "label": "Underarm to wrist",  "title": "Underarm to wrist length",   "min": 10, "max": 25, "step": 0.25 },
+        { "key": "xi",      "label": "Armscye",            "title": "Armscye circumference",      "min": 10, "max": 24, "step": 0.25 },
+        { "key": "psi",     "label": "Wrist",              "title": "Wrist circumference",        "min": 4,  "max": 12, "step": 0.25 }
+      ]
+    }
+  ],
+  "options": [
+    { "key": "fold",             "label": "on the fold (mirror front piece)", "default": true },
+    { "key": "deepen_bust_dart", "label": "deepen bust dart (+½\")",     "default": false }
+  ],
+  "pieces": [
+    { "id": "front",  "label": "Front" },
+    { "id": "back",   "label": "Back" },
+    { "id": "sleeve", "label": "Sleeve", "group": "sleeve" }
+  ],
+  "testSizes": [
+    { "label": "XS",        "values": { "alpha": 24, "beta": 32, "gamma": 14.5, "delta": 4.5,  "epsilon": 8.0,  "zeta": 6.5, "eta": 12.5, "theta": 12.5, "sigma": 22,   "upsilon": 9,    "omega": 16,   "xi": 14,   "psi": 5.5  } },
+    { "label": "S",         "values": { "alpha": 26, "beta": 34, "gamma": 15.0, "delta": 4.75, "epsilon": 8.5,  "zeta": 7.0, "eta": 13.0, "theta": 13.0, "sigma": 22.5, "upsilon": 9.5,  "omega": 16.5, "xi": 15,   "psi": 5.75 } },
+    { "label": "M",         "values": { "alpha": 28, "beta": 36, "gamma": 15.5, "delta": 5.0,  "epsilon": 9.0,  "zeta": 7.0, "eta": 14.0, "theta": 14.0, "sigma": 23,   "upsilon": 10,   "omega": 17,   "xi": 16,   "psi": 6    } },
+    { "label": "L",         "values": { "alpha": 30, "beta": 38, "gamma": 16.0, "delta": 5.25, "epsilon": 9.5,  "zeta": 7.5, "eta": 14.5, "theta": 14.5, "sigma": 23.5, "upsilon": 10,   "omega": 17.5, "xi": 17,   "psi": 6.25 } },
+    { "label": "XL",        "values": { "alpha": 32, "beta": 40, "gamma": 16.0, "delta": 5.25, "epsilon": 10.0, "zeta": 8.0, "eta": 15.0, "theta": 14.5, "sigma": 24,   "upsilon": 10.5, "omega": 18,   "xi": 18,   "psi": 6.5  } },
+    { "label": "2XL",       "values": { "alpha": 34, "beta": 42, "gamma": 16.5, "delta": 5.5,  "epsilon": 10.5, "zeta": 8.5, "eta": 15.5, "theta": 15.0, "sigma": 24.5, "upsilon": 11,   "omega": 18.5, "xi": 19,   "psi": 6.75 } },
+    { "label": "petite S",  "values": { "alpha": 25, "beta": 33, "gamma": 13.5, "delta": 4.25, "epsilon": 7.5,  "zeta": 6.5, "eta": 12.5, "theta": 12.5, "sigma": 21,   "upsilon": 8.5,  "omega": 15,   "xi": 14,   "psi": 5.5  } },
+    { "label": "tall S",    "values": { "alpha": 27, "beta": 35, "gamma": 17.5, "delta": 5.0,  "epsilon": 9.0,  "zeta": 7.0, "eta": 13.5, "theta": 13.5, "sigma": 24.5, "upsilon": 11,   "omega": 18.5, "xi": 15.5, "psi": 6    } },
+    { "label": "hourglass", "values": { "alpha": 26, "beta": 40, "gamma": 15.5, "delta": 5.0,  "epsilon": 9.5,  "zeta": 7.5, "eta": 14.5, "theta": 14.0, "sigma": 23,   "upsilon": 10,   "omega": 17,   "xi": 17,   "psi": 6    } },
+    { "label": "full bust", "values": { "alpha": 30, "beta": 44, "gamma": 16.0, "delta": 5.25, "epsilon": 10.5, "zeta": 9.0, "eta": 15.5, "theta": 15.0, "sigma": 23.5, "upsilon": 10.5, "omega": 17.5, "xi": 18.5, "psi": 6.5  } }
+  ]
+}
