@@ -794,7 +794,7 @@
 
     /* ── Manifest loading ────────────────────────────────────────────────── */
     async function fetchJSON(url) {
-      const r = await fetch(url);
+      const r = await fetch(url, { cache: 'no-store' });
       if (!r.ok) throw new Error(`${url} fetch failed (${r.status})`);
       return r.json();
     }
@@ -827,7 +827,7 @@
       for (const p of Object.values(PATTERNS))
         for (const f of p.files) files.push(`patterns/${p.id}/${f}`);
       const sources = await Promise.all(files.map(f =>
-        fetch(`./${f}`).then(r => {
+        fetch(`./${f}`, { cache: 'no-store' }).then(r => {
           if (!r.ok) throw new Error(`${f} fetch failed (${r.status})`);
           return r.text();
         })
@@ -837,6 +837,10 @@
         pyodide.FS.mkdirTree(`/home/pyodide/patterns/${id}`);
       files.forEach((f, i) =>
         pyodide.FS.writeFile(`/home/pyodide/${f}`, sources[i]));
+      // patterns read their manifest.json at import time
+      for (const p of Object.values(PATTERNS))
+        pyodide.FS.writeFile(`/home/pyodide/patterns/${p.id}/manifest.json`,
+                             JSON.stringify(p));
 
       await pyodide.runPythonAsync(`
 import sys, importlib

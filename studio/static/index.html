@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>pattern studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@300;400;500;700&family=Playwrite+DE+Grund:wght@400&display=swap" rel="stylesheet">
+  <style>
+    /* Design language shared with docs/index.html */
+    :root {
+      --bg: #ffffff; --bg-alt: #f4f5f6; --bg-card: #ffffff; --bg-input: #f9fafb;
+      --bg-hover: #eef0f3; --border: #dddddd; --border-focus: #90849c;
+      --text-dark: #2A2F36; --text-medium: #6C7A89; --text-light: #ABB7B7;
+      --accent: #90849c; --accent-hover: #7a6f8a; --accent-dim: rgba(144,132,156,0.12);
+      --header-bg: #DAC7FF; --header-text: #2A2F36;
+      --btn-pri-bg: #4a5568; --btn-pri-hover: #3d4659; --btn-pri-text: #ffffff;
+      --success: #4caf50; --danger: #d64541;
+      --shadow: 0 1px 4px rgba(0,0,0,.06); --radius: 6px; --radius-lg: 12px;
+      --font: 'Martian Mono', monospace; --font-title: 'Playwrite DE Grund', serif;
+    }
+    :root.dark {
+      --bg: #1a1d21; --bg-alt: #141618; --bg-card: #1f2227; --bg-input: #252a31;
+      --bg-hover: #2a2f38; --border: #2e3540; --border-focus: #a898b8;
+      --text-dark: #e8eaed; --text-medium: #8c9bb0; --text-light: #4a5568;
+      --accent: #a898b8; --accent-hover: #b8a8cc; --accent-dim: rgba(168,152,184,0.12);
+      --header-bg: #1e1628; --header-text: #e8eaed;
+      --btn-pri-bg: #90849c; --btn-pri-hover: #a898b8; --btn-pri-text: #ffffff;
+      --shadow: 0 1px 6px rgba(0,0,0,.30);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font); font-size: 13px; font-weight: 300;
+      color: var(--text-dark); background: var(--bg-alt); line-height: 1.5;
+      height: 100dvh; display: flex; flex-direction: column; overflow: hidden;
+    }
+
+    .main-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16px; height: 48px; flex-shrink: 0;
+      background: var(--header-bg); border-bottom: 1px solid rgba(0,0,0,.08);
+    }
+    .header-brand { display: flex; align-items: baseline; gap: 10px; }
+    .brand-name { font-family: var(--font-title); font-size: 19px; color: var(--header-text); }
+    .brand-sub { font-size: 10px; color: var(--header-text); opacity: .55; }
+    .header-right { display: flex; align-items: center; gap: 8px; }
+    .status-pill {
+      display: flex; align-items: center; gap: 6px; padding: 3px 11px;
+      border-radius: 99px; background: rgba(0,0,0,.07); font-size: 10px;
+      color: var(--header-text);
+    }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-light); }
+    .status-dot.loading { background: #e3bb7f; animation: pulse 1.2s infinite; }
+    .status-dot.ready { background: var(--success); }
+    .status-dot.error { background: var(--danger); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
+
+    .app { display: flex; flex: 1; min-height: 0; }
+    .panel {
+      flex-shrink: 0; overflow-y: auto; padding: 10px;
+      background: var(--header-bg); scrollbar-width: thin;
+    }
+    .panel-left { width: 320px; border-right: 1px solid rgba(0,0,0,.08); }
+    .panel-right { width: 400px; border-left: 1px solid rgba(0,0,0,.08); }
+
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 12px; margin-bottom: 9px;
+      box-shadow: var(--shadow);
+    }
+    .card h2 {
+      font-family: var(--font-title); font-size: 14px; font-weight: 400;
+      margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .hint { font-size: 9px; color: var(--text-medium); margin: 4px 0; line-height: 1.4; }
+
+    input[type="text"], input[type="number"], select {
+      font-family: var(--font); font-size: 12px; font-weight: 400;
+      padding: 4px 7px; border: 1px solid var(--border); border-radius: var(--radius);
+      background: var(--bg-input); color: var(--text-dark); outline: none;
+      min-width: 0; width: 100%;
+    }
+    input:focus, select:focus { border-color: var(--border-focus); background: var(--bg-card); }
+    input[type="color"] { width: 40px; height: 26px; padding: 1px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-input); }
+    input[type="checkbox"] { accent-color: var(--accent); }
+    label.small { font-size: 8px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-medium); display: block; }
+
+    .btn {
+      font-family: var(--font); font-size: 12px; font-weight: 500;
+      padding: 6px 13px; border: 1px solid transparent; border-radius: var(--radius);
+      cursor: pointer; white-space: nowrap;
+    }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-primary { background: var(--btn-pri-bg); color: var(--btn-pri-text); }
+    .btn-primary:hover:not(:disabled) { background: var(--btn-pri-hover); }
+    .btn-secondary { background: var(--bg); color: var(--text-medium); border-color: var(--border); }
+    .btn-secondary:hover { background: var(--bg-hover); color: var(--text-dark); }
+    .btn-accent { background: transparent; color: var(--accent); border-color: var(--accent); }
+    .btn-accent:hover { background: var(--accent-dim); }
+    .btn-xs { font-size: 10px; padding: 2px 7px; }
+    .btn-icon {
+      font-size: 11px; padding: 2px 6px; border: 1px solid var(--border);
+      border-radius: var(--radius); background: var(--bg-input); color: var(--text-medium);
+      cursor: pointer;
+    }
+    .btn-icon:hover { color: var(--text-dark); background: var(--bg-hover); }
+    .btn-icon.danger:hover { color: var(--danger); border-color: var(--danger); }
+
+    .row { display: flex; gap: 5px; align-items: center; margin-bottom: 5px; }
+    .row > * { flex: 1; }
+    .row > .fixed { flex: 0 0 auto; width: auto; }
+
+    /* center pane */
+    .center { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--bg-alt); }
+    .toolbar {
+      display: flex; gap: 5px; align-items: center; padding: 7px 10px;
+      background: var(--bg-card); border-bottom: 1px solid var(--border); flex-wrap: wrap;
+    }
+    .tool {
+      font-family: var(--font); font-size: 11px; padding: 5px 12px;
+      border: 1px solid var(--border); border-radius: 99px;
+      background: var(--bg-input); color: var(--text-medium); cursor: pointer;
+    }
+    .tool:hover { border-color: var(--accent); color: var(--accent); }
+    .tool.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); font-weight: 500; }
+    .toolbar .spacer { flex: 1; }
+    .tool-hint { font-size: 10px; color: var(--accent); padding: 2px 10px; min-height: 16px; }
+
+    .canvas-wrap { flex: 1; min-height: 0; position: relative; overflow: hidden; }
+    #canvas { width: 100%; height: 100%; display: block; cursor: grab; }
+    #canvas.panning { cursor: grabbing; }
+    #canvas .pt { cursor: pointer; }
+    #finalRender { position: absolute; inset: 0; overflow: auto; background: var(--bg-alt); padding: 14px; display: none; }
+    #finalRender.visible { display: block; }
+    #finalRender svg { width: 100%; height: auto; border-radius: var(--radius); box-shadow: 0 2px 14px rgba(0,0,0,.09); }
+
+    .banner {
+      display: none; margin: 8px 10px 0; padding: 7px 11px;
+      background: rgba(214,69,65,.07); border: 1px solid rgba(214,69,65,.3);
+      border-radius: var(--radius); font-size: 10px; color: var(--danger);
+      white-space: pre-wrap; max-height: 110px; overflow-y: auto;
+    }
+    .banner.visible { display: block; }
+
+    /* right panel widgets */
+    .piece-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+    .piece-tab {
+      font-size: 11px; padding: 4px 12px; border-radius: 99px; cursor: pointer;
+      border: 1px solid var(--border); background: var(--bg-input); color: var(--text-medium);
+    }
+    .piece-tab.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); font-weight: 500; }
+
+    .pt-row {
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 5px 6px; margin-bottom: 5px; background: var(--bg-input);
+    }
+    .pt-row.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+    .pt-row .head { display: flex; gap: 4px; align-items: center; }
+    .pt-row .head input.name { width: 56px; flex: 0 0 auto; font-weight: 700; }
+    .pt-row .head select.kind { flex: 0 0 auto; width: 105px; font-size: 10px; }
+    .pt-row .coords { font-size: 9px; color: var(--text-medium); flex: 1; text-align: right; white-space: nowrap; overflow: hidden; }
+    .pt-row .coords.err { color: var(--danger); }
+    .pt-row .params { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+    .pt-row .params .p { flex: 1 1 60px; min-width: 52px; }
+    .pt-row .params input, .pt-row .params select { font-size: 10px; padding: 3px 5px; }
+
+    .seg-row {
+      display: flex; gap: 4px; align-items: center; flex-wrap: wrap;
+      border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 4px 6px; margin-bottom: 4px; background: var(--bg-input); font-size: 10px;
+    }
+    .seg-row .desc { flex: 1; min-width: 90px; }
+    .seg-row .subparams { flex-basis: 100%; display: flex; gap: 4px; flex-wrap: wrap; padding-top: 3px; }
+    .seg-row .subparams > div { flex: 1 1 100px; }
+    .seg-row .subparams input, .seg-row .subparams select { font-size: 10px; padding: 2px 5px; }
+    .seg-row.selected { border-color: var(--accent); }
+
+    .mini-table .row { margin-bottom: 4px; }
+    .label-row { display: flex; gap: 4px; align-items: center; margin-bottom: 3px; font-size: 11px; }
+    .label-row .nm { width: 52px; font-weight: 700; flex: 0 0 auto; }
+    .label-row select { width: 84px; flex: 0 0 auto; font-size: 10px; }
+    .label-row input { width: 52px; flex: 0 0 auto; font-size: 10px; }
+
+    details { margin-bottom: 8px; }
+    details summary {
+      cursor: pointer; font-size: 11px; font-weight: 500; color: var(--text-medium);
+      padding: 3px 0; user-select: none;
+    }
+    details[open] summary { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <header class="main-header">
+    <div class="header-brand">
+      <span class="brand-name">pattern studio</span>
+      <span class="brand-sub" id="projectPath"></span>
+    </div>
+    <div class="header-right">
+      <div class="status-pill"><span class="status-dot" id="statusDot"></span><span id="statusLabel">loading…</span></div>
+      <button class="btn btn-secondary" id="btnSave">Save</button>
+      <button class="btn btn-primary" id="btnExport">Export → patterns/</button>
+      <button class="btn-icon" id="btnTheme" title="Toggle dark mode">◑</button>
+    </div>
+  </header>
+
+  <div class="app">
+    <!-- ══ LEFT: pattern-level definition ══ -->
+    <div class="panel panel-left">
+      <div class="card">
+        <h2>Pattern</h2>
+        <div class="row"><div><label class="small">id (folder name)</label><input type="text" id="patId"></div></div>
+        <div class="row"><div><label class="small">display name</label><input type="text" id="patName"></div></div>
+        <div class="row"><div><label class="small">source attribution</label><input type="text" id="patSource"></div></div>
+      </div>
+
+      <div class="card">
+        <h2>Measurements <button class="btn btn-accent btn-xs" id="btnAddGroup">+ group</button></h2>
+        <div id="measureGroups"></div>
+      </div>
+
+      <div class="card">
+        <h2>Derived values <button class="btn btn-accent btn-xs" id="btnAddDerived">+</button></h2>
+        <p class="hint">Named intermediate values, e.g. <b>c = beta / 2</b>. Usable in every expression.</p>
+        <div id="derivedList"></div>
+      </div>
+
+      <div class="card">
+        <h2>Options <button class="btn btn-accent btn-xs" id="btnAddOption">+</button></h2>
+        <p class="hint">Checkboxes on the web form. An option with key <b>fold</b> activates pieces' fold setting.</p>
+        <div id="optionsList"></div>
+      </div>
+
+      <div class="card">
+        <h2>Preview values</h2>
+        <p class="hint">Measurement values used for the live canvas and final render.</p>
+        <div id="previewValues"></div>
+        <div class="row" style="margin-top:6px">
+          <button class="btn btn-secondary btn-xs fixed" id="btnSaveSize">save as test size</button>
+        </div>
+        <div id="testSizes"></div>
+      </div>
+    </div>
+
+    <!-- ══ CENTER: canvas ══ -->
+    <div class="center">
+      <div class="toolbar">
+        <button class="tool" data-tool="select" title="Select points">select</button>
+        <button class="tool" data-tool="line">line</button>
+        <button class="tool" data-tool="dart">dart</button>
+        <button class="tool" data-tool="quadratic">quadratic</button>
+        <button class="tool" data-tool="cubic">cubic</button>
+        <button class="tool" data-tool="catmull">catmull</button>
+        <button class="btn btn-secondary btn-xs" id="btnFinishChain" style="display:none">finish chain</button>
+        <span class="spacer"></span>
+        <span class="tool-hint" id="toolHint"></span>
+        <button class="btn btn-secondary btn-xs" id="btnFit">⤢ fit</button>
+        <button class="btn btn-secondary btn-xs" id="btnFinal">final render</button>
+      </div>
+      <div class="banner" id="banner"></div>
+      <div class="canvas-wrap">
+        <svg id="canvas" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div id="finalRender"></div>
+      </div>
+    </div>
+
+    <!-- ══ RIGHT: active piece ══ -->
+    <div class="panel panel-right">
+      <div class="piece-tabs" id="pieceTabs"></div>
+      <div id="pieceEditor"></div>
+    </div>
+  </div>
+
+  <datalist id="pointOptions"></datalist>
+
+  <script>
+    /* ── Theme ──────────────────────────────────────────────────────────── */
+    if (localStorage.getItem('vb-theme') === 'dark')
+      document.documentElement.classList.add('dark');
+    document.getElementById('btnTheme').addEventListener('click', () => {
+      const dark = document.documentElement.classList.toggle('dark');
+      localStorage.setItem('vb-theme', dark ? 'dark' : 'light');
+    });
+
+    /* ── State ──────────────────────────────────────────────────────────── */
+    let project = null;
+    let previewValues = {};
+    let evalRes = null;          // last /api/eval response
+    let curPiece = 0;            // index into project.pieces
+    let tool = 'select';
+    let clicks = [];             // pending canvas clicks for segment tools
+    let selectedPoint = null;
+    let view = null;             // {cx, cy, scale(px per inch)} canvas view
+    let finalMode = false;
+
+    const $ = id => document.getElementById(id);
+
+    const KIND_PARAMS = {
+      formula:         [['x','expr'],['y','expr']],
+      offset:          [['from','point'],['dx','expr'],['dy','expr']],
+      midpoint:        [['p1','point'],['p2','point'],['t','expr']],
+      along:           [['from','point'],['toward','point'],['dist','expr']],
+      circle_h:        [['center','point'],['radius','expr'],['y','expr'],['branch',['left','right']]],
+      circle_v:        [['center','point'],['radius','expr'],['x','expr'],['branch',['down','up']]],
+      on_line:         [['p1','point'],['p2','point'],['x','expr'],['y','expr']],
+      intersect_lines: [['a1','point'],['a2','point'],['b1','point'],['b2','point']],
+    };
+    const KIND_DEFAULTS = {
+      formula: {x:'0', y:'0'}, offset: {from:'', dx:'0', dy:'0'},
+      midpoint: {p1:'', p2:'', t:''}, along: {from:'', toward:'', dist:'1'},
+      circle_h: {center:'', radius:'1', y:'0', branch:'left'},
+      circle_v: {center:'', radius:'1', x:'0', branch:'down'},
+      on_line: {p1:'', p2:'', x:'', y:''},
+      intersect_lines: {a1:'', a2:'', b1:'', b2:''},
+    };
+    const TANGENT_DIRS = ['chord','horizontal+','horizontal-','vertical+','vertical-','toward','angle'];
+
+    function el(tag, attrs = {}, children = []) {
+      const node = document.createElement(tag);
+      for (const [k, v] of Object.entries(attrs)) {
+        if (k === 'text') node.textContent = v;
+        else if (k === 'html') node.innerHTML = v;
+        else if (k.startsWith('on')) node.addEventListener(k.slice(2), v);
+        else if (v !== undefined && v !== null && v !== false) node.setAttribute(k, v === true ? '' : v);
+      }
+      for (const c of children) if (c) node.appendChild(c);
+      return node;
+    }
+    function setStatus(label, state) {
+      $('statusDot').className = 'status-dot ' + state;
+      $('statusLabel').textContent = label;
+    }
+    function piece() { return project.pieces[curPiece]; }
+    function allFields() {
+      return project.measurementGroups.flatMap(g => g.fields);
+    }
+    function pointNames(pieceIdx = curPiece) {
+      const own = project.pieces[pieceIdx].points.map(p => p.name);
+      const earlier = [];
+      for (let i = 0; i < pieceIdx; i++)
+        for (const p of project.pieces[i].points)
+          earlier.push(project.pieces[i].id + '.' + p.name);
+      return own.concat(earlier);
+    }
+    function refreshPointOptions() {
+      $('pointOptions').innerHTML = '';
+      for (const n of pointNames())
+        $('pointOptions').appendChild(el('option', { value: n }));
+    }
+
+    /* ── API ────────────────────────────────────────────────────────────── */
+    async function api(method, path, body) {
+      const r = await fetch(path, {
+        method, headers: { 'Content-Type': 'application/json' },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      const data = await r.json();
+      if (!r.ok && r.status !== 409) throw new Error(data.error || r.statusText);
+      return { status: r.status, data };
+    }
+
+    let evalTimer = null;
+    let evalSeq = 0;
+    function queueEval(structural = false) {
+      if (structural) { renderPieceEditor(); refreshPointOptions(); }
+      clearTimeout(evalTimer);
+      evalTimer = setTimeout(runEval, 250);
+    }
+    async function runEval() {
+      const seq = ++evalSeq;
+      try {
+        setStatus('evaluating…', 'loading');
+        const { data } = await api('POST', '/api/eval', { project, values: previewValues });
+        if (seq !== evalSeq) return;   // a newer eval is in flight — drop stale result
+        evalRes = data;
+        updateBanner();
+        updateCoordBadges();
+        drawCanvas();
+        if (finalMode) runFinalRender();
+        setStatus('ready', 'ready');
+      } catch (err) {
+        setStatus('error', 'error');
+        showBanner(['⚠ ' + err.message]);
+      }
+    }
+
+    function showBanner(lines) {
+      const b = $('banner');
+      if (!lines.length) { b.classList.remove('visible'); return; }
+      b.textContent = lines.join('\n');
+      b.classList.add('visible');
+    }
+    function updateBanner() {
+      const lines = [];
+      for (const iss of evalRes.issues || []) lines.push(`⚠ ${iss.path}: ${iss.message}`);
+      for (const e of evalRes.errors || []) lines.push(`⚠ derived ${e.name}: ${e.message}`);
+      const pc = evalRes.pieces[piece().id];
+      if (pc) for (const e of pc.errors) lines.push(`⚠ ${e.where} ${e.name}: ${e.message}`);
+      showBanner(lines);
+    }
+
+    /* ── Left panel ─────────────────────────────────────────────────────── */
+    function bindText(input, obj, key, structural = false) {
+      input.value = obj[key] ?? '';
+      input.addEventListener('input', () => { obj[key] = input.value; queueEval(structural); });
+    }
+
+    function renderMeta() {
+      bindText($('patId'), project, 'id');
+      bindText($('patName'), project, 'name');
+      bindText($('patSource'), project, 'source');
+    }
+
+    function renderMeasurements() {
+      const root = $('measureGroups');
+      root.innerHTML = '';
+      project.measurementGroups.forEach((grp, gi) => {
+        const head = el('div', { class: 'row' }, [
+          (() => { const i = el('input', { type: 'text', title: 'group label' }); bindText(i, grp, 'label'); return i; })(),
+          el('label', { class: 'fixed', style: 'font-size:10px' }, [
+            (() => { const c = el('input', { type: 'checkbox' }); c.checked = !grp.required;
+              c.addEventListener('change', () => { grp.required = !c.checked; queueEval(); }); return c; })(),
+            document.createTextNode(' optional'),
+          ]),
+          el('button', { class: 'btn-icon danger fixed', text: '×', title: 'delete group',
+            onclick: () => { project.measurementGroups.splice(gi, 1); renderMeasurements(); renderPreviewValues(); queueEval(true); } }),
+        ]);
+        root.appendChild(head);
+        grp.fields.forEach((f, fi) => {
+          const row = el('div', { class: 'row' }, [
+            (() => { const i = el('input', { type: 'text', placeholder: 'key', title: 'identifier used in formulas' });
+              i.style.fontWeight = '700'; bindText(i, f, 'key'); i.addEventListener('input', renderPreviewValuesSoon); return i; })(),
+            (() => { const i = el('input', { type: 'text', placeholder: 'label', title: f.title || 'display label' }); bindText(i, f, 'label'); return i; })(),
+            (() => { const i = el('input', { type: 'number', placeholder: 'default', step: 'any', class: 'fixed', style: 'width:64px' });
+              i.value = f.default ?? '';
+              i.addEventListener('input', () => { f.default = parseFloat(i.value); renderPreviewValuesSoon(); queueEval(); }); return i; })(),
+            el('button', { class: 'btn-icon danger fixed', text: '×',
+              onclick: () => { grp.fields.splice(fi, 1); renderMeasurements(); renderPreviewValues(); queueEval(true); } }),
+          ]);
+          root.appendChild(row);
+        });
+        root.appendChild(el('div', { class: 'row' }, [
+          el('button', { class: 'btn btn-accent btn-xs fixed', text: '+ measurement',
+            onclick: () => { grp.fields.push({ key: '', label: '', default: 1 }); renderMeasurements(); } }),
+        ]));
+        if (gi < project.measurementGroups.length - 1)
+          root.appendChild(el('hr', { style: 'border:none;border-top:1px solid var(--border);margin:8px 0' }));
+      });
+    }
+    let pvTimer = null;
+    function renderPreviewValuesSoon() { clearTimeout(pvTimer); pvTimer = setTimeout(renderPreviewValues, 400); }
+
+    function renderDerived() {
+      const root = $('derivedList');
+      root.innerHTML = '';
+      project.derived.forEach((d, di) => {
+        root.appendChild(el('div', { class: 'row' }, [
+          (() => { const i = el('input', { type: 'text', placeholder: 'name', class: 'fixed', style: 'width:64px;font-weight:700' }); bindText(i, d, 'name'); return i; })(),
+          el('span', { class: 'fixed', text: '=' }),
+          (() => { const i = el('input', { type: 'text', placeholder: 'expression' }); bindText(i, d, 'expr'); return i; })(),
+          el('button', { class: 'btn-icon danger fixed', text: '×',
+            onclick: () => { project.derived.splice(di, 1); renderDerived(); queueEval(true); } }),
+        ]));
+      });
+    }
+
+    function renderOptions() {
+      const root = $('optionsList');
+      root.innerHTML = '';
+      project.options.forEach((o, oi) => {
+        root.appendChild(el('div', { class: 'row' }, [
+          (() => { const i = el('input', { type: 'text', placeholder: 'key', class: 'fixed', style: 'width:80px;font-weight:700' }); bindText(i, o, 'key'); return i; })(),
+          (() => { const i = el('input', { type: 'text', placeholder: 'label' }); bindText(i, o, 'label'); return i; })(),
+          (() => { const c = el('input', { type: 'checkbox', class: 'fixed', title: 'default on' }); c.checked = !!o.default;
+            c.addEventListener('change', () => { o.default = c.checked; }); return c; })(),
+          el('button', { class: 'btn-icon danger fixed', text: '×',
+            onclick: () => { project.options.splice(oi, 1); renderOptions(); } }),
+        ]));
+      });
+    }
+
+    function renderPreviewValues() {
+      const root = $('previewValues');
+      root.innerHTML = '';
+      for (const f of allFields()) {
+        if (!f.key) continue;
+        if (!(f.key in previewValues)) previewValues[f.key] = f.default ?? 1;
+        const inp = el('input', { type: 'number', step: 'any' });
+        inp.value = previewValues[f.key];
+        inp.addEventListener('input', () => {
+          previewValues[f.key] = parseFloat(inp.value);
+          queueEval();
+        });
+        root.appendChild(el('div', { class: 'row' }, [
+          el('label', { class: 'fixed', style: 'width:88px;font-size:10px', text: f.key }),
+          inp,
+        ]));
+      }
+      renderTestSizes();
+    }
+
+    function renderTestSizes() {
+      const root = $('testSizes');
+      root.innerHTML = '';
+      (project.testSizes || []).forEach((s, si) => {
+        root.appendChild(el('div', { class: 'row' }, [
+          el('span', { style: 'font-size:11px', text: s.label }),
+          el('button', { class: 'btn btn-secondary btn-xs fixed', text: 'apply',
+            onclick: () => { Object.assign(previewValues, s.values); renderPreviewValues(); queueEval(); } }),
+          el('button', { class: 'btn-icon danger fixed', text: '×',
+            onclick: () => { project.testSizes.splice(si, 1); renderTestSizes(); } }),
+        ]));
+      });
+    }
+
+    /* ── Right panel: piece editor ──────────────────────────────────────── */
+    function renderPieceTabs() {
+      const root = $('pieceTabs');
+      root.innerHTML = '';
+      project.pieces.forEach((p, pi) => {
+        root.appendChild(el('button', {
+          class: 'piece-tab' + (pi === curPiece ? ' active' : ''), text: p.label || p.id,
+          onclick: () => { curPiece = pi; selectedPoint = null; clicks = []; view = null;
+                           renderPieceTabs(); renderPieceEditor(); refreshPointOptions(); drawCanvas(); updateBanner(); if (finalMode) runFinalRender(); },
+        }));
+      });
+      root.appendChild(el('button', {
+        class: 'piece-tab', text: '+ piece',
+        onclick: () => {
+          const n = project.pieces.length + 1;
+          project.pieces.push({
+            id: 'piece' + n, label: 'Piece ' + n, group: null, fold: null,
+            points: [], segments: [], construction_lines: [],
+            unclipped_construction_lines: [], dart_lines: [],
+            labels: { outline: [], interior: [] }, label_offsets: {},
+            style: { fill: '#dce8f5', stroke: '#2255aa' }, text_annotations: [],
+          });
+          curPiece = project.pieces.length - 1;
+          renderPieceTabs(); renderPieceEditor(); refreshPointOptions(); queueEval();
+        },
+      }));
+    }
+
+    function pointRefInput(obj, key, placeholder) {
+      const i = el('input', { type: 'text', list: 'pointOptions', placeholder });
+      i.value = obj[key] ?? '';
+      i.addEventListener('input', () => { obj[key] = i.value; queueEval(); });
+      return i;
+    }
+
+    function renamePoint(oldName, newName) {
+      // update structured refs + expressions across the whole project
+      const rx = new RegExp('\\b' + oldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'g');
+      const fix = s => (typeof s === 'string' ? s.replace(rx, newName) : s);
+      for (const pc of project.pieces) {
+        for (const pt of pc.points)
+          for (const k of Object.keys(pt))
+            if (!['name', 'kind', 'branch'].includes(k)) pt[k] = fix(pt[k]);
+        for (const seg of pc.segments) {
+          for (const k of ['from', 'to', 'cp']) if (seg[k]) seg[k] = fix(seg[k]);
+          if (seg.through) seg.through = seg.through.map(fix);
+          for (const end of ['tangent_from', 'tangent_to'])
+            if (seg[end]) { seg[end].dir = fix(seg[end].dir); if (seg[end].len) seg[end].len = fix(seg[end].len); }
+        }
+        for (const k of ['construction_lines', 'unclipped_construction_lines', 'dart_lines'])
+          pc[k] = (pc[k] || []).map(pair => pair.map(fix));
+        pc.labels.outline = pc.labels.outline.map(fix);
+        pc.labels.interior = pc.labels.interior.map(fix);
+        const lo = {};
+        for (const [k, v] of Object.entries(pc.label_offsets || {})) lo[fix(k)] = v;
+        pc.label_offsets = lo;
+        if (pc.fold && pc.fold.point) pc.fold.point = fix(pc.fold.point);
+        for (const ann of pc.text_annotations || []) { ann.x = fix(ann.x); ann.y = fix(ann.y); }
+      }
+    }
+
+    function renderPointRow(pt, qi) {
+      const p = piece();
+      const row = el('div', { class: 'pt-row' + (selectedPoint === pt.name ? ' selected' : ''), 'data-point': pt.name });
+      const nameInput = el('input', { type: 'text', class: 'name' });
+      nameInput.value = pt.name;
+      nameInput.addEventListener('change', () => {
+        const nn = nameInput.value.trim();
+        if (nn && nn !== pt.name) { renamePoint(pt.name, nn); pt.name = nn; queueEval(true); }
+      });
+      const kindSel = el('select', { class: 'kind' });
+      for (const k of Object.keys(KIND_PARAMS))
+        kindSel.appendChild(el('option', { value: k, text: k }));
+      kindSel.value = pt.kind || 'formula';
+      kindSel.addEventListener('change', () => {
+        const name = pt.name;
+        for (const k of Object.keys(pt)) delete pt[k];
+        Object.assign(pt, { name, kind: kindSel.value }, KIND_DEFAULTS[kindSel.value]);
+        queueEval(true);
+      });
+      const coords = el('span', { class: 'coords', 'data-coords': pt.name, text: '…' });
+      row.appendChild(el('div', { class: 'head' }, [
+        nameInput, kindSel, coords,
+        el('button', { class: 'btn-icon', text: '↑', onclick: () => { if (qi > 0) { [p.points[qi-1], p.points[qi]] = [p.points[qi], p.points[qi-1]]; queueEval(true); } } }),
+        el('button', { class: 'btn-icon', text: '↓', onclick: () => { if (qi < p.points.length - 1) { [p.points[qi+1], p.points[qi]] = [p.points[qi], p.points[qi+1]]; queueEval(true); } } }),
+        el('button', { class: 'btn-icon danger', text: '×', onclick: () => { p.points.splice(qi, 1); queueEval(true); } }),
+      ]));
+      const params = el('div', { class: 'params' });
+      for (const [param, ptype] of KIND_PARAMS[pt.kind || 'formula']) {
+        const cell = el('div', { class: 'p' }, [el('label', { class: 'small', text: param })]);
+        if (ptype === 'point') cell.appendChild(pointRefInput(pt, param, 'point'));
+        else if (Array.isArray(ptype)) {
+          const s = el('select');
+          for (const opt of ptype) s.appendChild(el('option', { value: opt, text: opt }));
+          s.value = pt[param] || ptype[0];
+          s.addEventListener('change', () => { pt[param] = s.value; queueEval(); });
+          cell.appendChild(s);
+        } else {
+          const i = el('input', { type: 'text', placeholder: param });
+          i.value = pt[param] ?? '';
+          i.addEventListener('input', () => { pt[param] = i.value; queueEval(); });
+          cell.appendChild(i);
+        }
+        params.appendChild(cell);
+      }
+      row.appendChild(params);
+      row.addEventListener('click', e => {
+        if (e.target.closest('input,select,button')) return;
+        selectedPoint = pt.name; renderPieceEditor(); drawCanvas();
+      });
+      return row;
+    }
+
+    function segDesc(seg) {
+      if (seg.type === 'catmull_chain') return 'through ' + (seg.through || []).join(' → ');
+      return `${seg.from || '?'} → ${seg.to || '?'}` + (seg.type === 'quadratic' ? ` (cp ${seg.cp || '?'})` : '');
+    }
+
+    function tangentEditor(seg, end) {
+      const spec = seg[end] = seg[end] || { dir: 'chord' };
+      const wrap = el('div');
+      wrap.appendChild(el('label', { class: 'small', text: end.replace('_', ' ') }));
+      const dirSel = el('select');
+      for (const d of TANGENT_DIRS) dirSel.appendChild(el('option', { value: d, text: d }));
+      dirSel.value = spec.dir?.startsWith('toward:') ? 'toward' : (spec.dir || 'chord');
+      const extra = el('input', { type: 'text', placeholder: 'point / angle', list: 'pointOptions', style: 'margin-top:2px' });
+      const lenInput = el('input', { type: 'text', placeholder: 'len (chord/3)', style: 'margin-top:2px' });
+      lenInput.value = spec.len || '';
+      function syncExtra() {
+        const mode = dirSel.value;
+        extra.style.display = (mode === 'toward' || mode === 'angle') ? '' : 'none';
+        if (mode === 'toward') extra.value = spec.dir?.startsWith('toward:') ? spec.dir.slice(7) : '';
+        if (mode === 'angle') extra.value = spec.angle || '';
+      }
+      dirSel.addEventListener('change', () => {
+        if (dirSel.value === 'toward') spec.dir = 'toward:';
+        else if (dirSel.value === 'angle') { spec.dir = 'angle'; spec.angle = spec.angle || '0'; }
+        else spec.dir = dirSel.value;
+        syncExtra(); queueEval();
+      });
+      extra.addEventListener('input', () => {
+        if (dirSel.value === 'toward') spec.dir = 'toward:' + extra.value;
+        else spec.angle = extra.value;
+        queueEval();
+      });
+      lenInput.addEventListener('input', () => { spec.len = lenInput.value; queueEval(); });
+      syncExtra();
+      wrap.appendChild(dirSel); wrap.appendChild(extra); wrap.appendChild(lenInput);
+      return wrap;
+    }
+
+    function renderSegRow(seg, si) {
+      const p = piece();
+      const row = el('div', { class: 'seg-row' }, [
+        el('b', { text: seg.type, style: 'color:var(--accent)' }),
+        el('span', { class: 'desc', text: segDesc(seg) }),
+        el('button', { class: 'btn-icon', text: '↑', onclick: () => { if (si > 0) { [p.segments[si-1], p.segments[si]] = [p.segments[si], p.segments[si-1]]; queueEval(true); } } }),
+        el('button', { class: 'btn-icon', text: '↓', onclick: () => { if (si < p.segments.length - 1) { [p.segments[si+1], p.segments[si]] = [p.segments[si], p.segments[si+1]]; queueEval(true); } } }),
+        el('button', { class: 'btn-icon danger', text: '×', onclick: () => { p.segments.splice(si, 1); queueEval(true); } }),
+      ]);
+      if (seg.type === 'quadratic') {
+        const sub = el('div', { class: 'subparams' });
+        const cell = el('div', {}, [el('label', { class: 'small', text: 'control point' }), pointRefInput(seg, 'cp', 'point')]);
+        sub.appendChild(cell);
+        row.appendChild(sub);
+      }
+      if (seg.type === 'cubic') {
+        const sub = el('div', { class: 'subparams' });
+        sub.appendChild(tangentEditor(seg, 'tangent_from'));
+        sub.appendChild(tangentEditor(seg, 'tangent_to'));
+        row.appendChild(sub);
+      }
+      if (seg.type === 'cubic' || seg.type === 'catmull_chain') {
+        const c = el('input', { type: 'checkbox', title: 'seam allowance follows this curve' });
+        c.checked = !!seg.curve_seam;
+        c.addEventListener('change', () => { seg.curve_seam = c.checked; queueEval(); });
+        row.appendChild(el('label', { style: 'font-size:9px' }, [c, document.createTextNode(' curve seam')]));
+      }
+      return row;
+    }
+
+    function pairList(listKey, title) {
+      const p = piece();
+      const wrap = el('div', { class: 'mini-table' });
+      (p[listKey] = p[listKey] || []).forEach((pair, li) => {
+        const mk = idx => {
+          const i = el('input', { type: 'text', list: 'pointOptions' });
+          i.value = pair[idx] || '';
+          i.addEventListener('input', () => { pair[idx] = i.value; queueEval(); });
+          return i;
+        };
+        wrap.appendChild(el('div', { class: 'row' }, [
+          mk(0), el('span', { class: 'fixed', text: '–' }), mk(1),
+          el('button', { class: 'btn-icon danger fixed', text: '×',
+            onclick: () => { p[listKey].splice(li, 1); queueEval(true); } }),
+        ]));
+      });
+      wrap.appendChild(el('button', { class: 'btn btn-accent btn-xs', text: '+ ' + title,
+        onclick: () => { p[listKey].push(['', '']); queueEval(true); } }));
+      return wrap;
+    }
+
+    function renderLabelsEditor() {
+      const p = piece();
+      const wrap = el('div');
+      p.labels = p.labels || { outline: [], interior: [] };
+      p.label_offsets = p.label_offsets || {};
+      for (const pt of p.points) {
+        const mode = p.labels.outline.includes(pt.name) ? 'outline'
+                   : p.labels.interior.includes(pt.name) ? 'interior' : 'none';
+        const sel = el('select');
+        for (const m of ['none', 'outline', 'interior']) sel.appendChild(el('option', { value: m, text: m }));
+        sel.value = mode;
+        const off = p.label_offsets[pt.name] || [null, null];
+        const dx = el('input', { type: 'number', step: '0.05', placeholder: 'auto', title: 'label offset dx (in)' });
+        const dy = el('input', { type: 'number', step: '0.05', placeholder: 'auto', title: 'label offset dy (in)' });
+        if (off[0] !== null && off[0] !== undefined) dx.value = off[0];
+        if (off[1] !== null && off[1] !== undefined) dy.value = off[1];
+        const syncOffset = () => {
+          if (dx.value === '' && dy.value === '') delete p.label_offsets[pt.name];
+          else p.label_offsets[pt.name] = [parseFloat(dx.value) || 0, parseFloat(dy.value) || 0];
+          queueEval();
+        };
+        dx.addEventListener('input', syncOffset);
+        dy.addEventListener('input', syncOffset);
+        sel.addEventListener('change', () => {
+          p.labels.outline = p.labels.outline.filter(n => n !== pt.name);
+          p.labels.interior = p.labels.interior.filter(n => n !== pt.name);
+          if (sel.value !== 'none') p.labels[sel.value].push(pt.name);
+          queueEval();
+        });
+        wrap.appendChild(el('div', { class: 'label-row' }, [
+          el('span', { class: 'nm', text: pt.name }), sel, dx, dy,
+        ]));
+      }
+      return wrap;
+    }
+
+    function renderAnnotations() {
+      const p = piece();
+      const wrap = el('div');
+      (p.text_annotations = p.text_annotations || []).forEach((ann, ai) => {
+        const mk = (key, ph) => {
+          const i = el('input', { type: 'text', placeholder: ph });
+          i.value = ann[key] ?? '';
+          i.addEventListener('input', () => { ann[key] = i.value; queueEval(); });
+          return i;
+        };
+        wrap.appendChild(el('div', { class: 'row' }, [
+          mk('text', 'text'), mk('x', 'x expr'), mk('y', 'y expr'),
+          el('button', { class: 'btn-icon danger fixed', text: '×',
+            onclick: () => { p.text_annotations.splice(ai, 1); queueEval(true); } }),
+        ]));
+      });
+      wrap.appendChild(el('button', { class: 'btn btn-accent btn-xs', text: '+ annotation',
+        onclick: () => { p.text_annotations.push({ text: '', x: '0', y: '0' }); queueEval(true); } }));
+      return wrap;
+    }
+
+    function renderPieceEditor() {
+      const p = piece();
+      const root = $('pieceEditor');
+      root.innerHTML = '';
+
+      // piece meta
+      const meta = el('div', { class: 'card' });
+      meta.appendChild(el('h2', {}, [
+        document.createTextNode('Piece'),
+        el('button', { class: 'btn-icon danger', text: 'delete piece', style: 'font-size:9px',
+          onclick: () => {
+            if (project.pieces.length <= 1) return alert('a pattern needs at least one piece');
+            if (!confirm(`Delete piece "${p.id}"?`)) return;
+            project.pieces.splice(curPiece, 1);
+            curPiece = Math.max(0, curPiece - 1);
+            renderPieceTabs(); queueEval(true);
+          } }),
+      ]));
+      const idIn = el('input', { type: 'text' }); bindText(idIn, p, 'id');
+      idIn.addEventListener('input', () => renderPieceTabs());
+      const lblIn = el('input', { type: 'text' }); bindText(lblIn, p, 'label');
+      lblIn.addEventListener('input', () => renderPieceTabs());
+      meta.appendChild(el('div', { class: 'row' }, [
+        el('div', {}, [el('label', { class: 'small', text: 'id' }), idIn]),
+        el('div', {}, [el('label', { class: 'small', text: 'label' }), lblIn]),
+      ]));
+      const groupSel = el('select');
+      groupSel.appendChild(el('option', { value: '', text: '(always drafted)' }));
+      for (const g of project.measurementGroups)
+        if (!g.required) groupSel.appendChild(el('option', { value: g.id, text: 'needs group: ' + g.id }));
+      groupSel.value = p.group || '';
+      groupSel.addEventListener('change', () => { p.group = groupSel.value || null; queueEval(); });
+      const foldIn = el('input', { type: 'text', list: 'pointOptions', placeholder: '(none)' });
+      foldIn.value = p.fold?.point || '';
+      foldIn.addEventListener('input', () => { p.fold = foldIn.value ? { point: foldIn.value } : null; });
+      const fill = el('input', { type: 'color' }); fill.value = p.style?.fill || '#dce8f5';
+      const stroke = el('input', { type: 'color' }); stroke.value = p.style?.stroke || '#2255aa';
+      fill.addEventListener('input', () => { (p.style = p.style || {}).fill = fill.value; queueEval(); });
+      stroke.addEventListener('input', () => { (p.style = p.style || {}).stroke = stroke.value; queueEval(); });
+      meta.appendChild(el('div', { class: 'row' }, [
+        el('div', {}, [el('label', { class: 'small', text: 'optional group' }), groupSel]),
+        el('div', {}, [el('label', { class: 'small', text: 'fold point (needs "fold" option)' }), foldIn]),
+      ]));
+      meta.appendChild(el('div', { class: 'row' }, [
+        el('div', { class: 'fixed' }, [el('label', { class: 'small', text: 'fill' }), fill]),
+        el('div', { class: 'fixed' }, [el('label', { class: 'small', text: 'stroke' }), stroke]),
+      ]));
+      root.appendChild(meta);
+
+      // points
+      const ptsCard = el('div', { class: 'card' });
+      ptsCard.appendChild(el('h2', {}, [
+        document.createTextNode('Points'),
+        el('button', { class: 'btn btn-accent btn-xs', text: '+ point',
+          onclick: () => {
+            let n = 1, name;
+            const names = new Set(p.points.map(q => q.name));
+            do { name = 'P' + n++; } while (names.has(name));
+            p.points.push({ name, kind: 'formula', x: '0', y: '0' });
+            queueEval(true);
+          } }),
+      ]));
+      ptsCard.appendChild(el('p', { class: 'hint', html:
+        'Expressions may use measurements, derived values, other points ' +
+        '(<b>A.x</b>, <b>A.y</b>), <b>dist(A,B)</b>, <b>liney/linex(P1,P2,v)</b>, ' +
+        '<b>sqrt</b>, earlier pieces (<b>front.A</b>).' }));
+      p.points.forEach((pt, qi) => ptsCard.appendChild(renderPointRow(pt, qi)));
+      root.appendChild(ptsCard);
+
+      // segments
+      const segCard = el('div', { class: 'card' });
+      segCard.appendChild(el('h2', { text: 'Outline segments' }));
+      segCard.appendChild(el('p', { class: 'hint', text:
+        'Ordered walk around the piece. Add with the canvas tools (click points) or reorder here.' }));
+      p.segments.forEach((seg, si) => segCard.appendChild(renderSegRow(seg, si)));
+      root.appendChild(segCard);
+
+      // extras
+      const extras = el('div', { class: 'card' });
+      extras.appendChild(el('h2', { text: 'Guides & labels' }));
+      const d1 = el('details', {}, [el('summary', { text: 'construction lines' }), pairList('construction_lines', 'construction line')]);
+      const d2 = el('details', {}, [el('summary', { text: 'unclipped construction lines' }), pairList('unclipped_construction_lines', 'unclipped line')]);
+      const d3 = el('details', {}, [el('summary', { text: 'dart guide lines' }), pairList('dart_lines', 'dart line')]);
+      const d4 = el('details', {}, [el('summary', { text: 'point labels & offsets' }), renderLabelsEditor()]);
+      const d5 = el('details', {}, [el('summary', { text: 'text annotations' }), renderAnnotations()]);
+      for (const d of [d1, d2, d3, d4, d5]) extras.appendChild(d);
+      root.appendChild(extras);
+    }
+
+    function updateCoordBadges() {
+      const pc = evalRes?.pieces?.[piece().id];
+      if (!pc) return;
+      const errByName = {};
+      for (const e of pc.errors) if (e.where === 'point') errByName[e.name] = e.message;
+      document.querySelectorAll('[data-coords]').forEach(span => {
+        const n = span.dataset.coords;
+        if (errByName[n]) { span.textContent = '⚠ ' + errByName[n]; span.classList.add('err'); }
+        else if (pc.points[n]) {
+          span.textContent = `(${pc.points[n][0].toFixed(2)}, ${pc.points[n][1].toFixed(2)})`;
+          span.classList.remove('err');
+        } else { span.textContent = '—'; span.classList.remove('err'); }
+      });
+    }
+
+    /* ── Canvas ─────────────────────────────────────────────────────────── */
+    function canvasSize() {
+      const r = $('canvas').getBoundingClientRect();
+      return [r.width || 800, r.height || 600];
+    }
+    function fitView() {
+      const pc = evalRes?.pieces?.[piece().id];
+      const pts = [];
+      if (pc) {
+        for (const p of Object.values(pc.points)) pts.push(p);
+        for (const s of pc.segments) for (const q of s.samples) pts.push(q);
+      }
+      if (!pts.length) { view = { cx: 0, cy: 0, scale: 40 }; return; }
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      for (const [x, y] of pts) {
+        minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+        minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+      }
+      const [w, h] = canvasSize();
+      const scale = Math.min(w / Math.max(maxX - minX + 2, 1), h / Math.max(maxY - minY + 2, 1));
+      view = { cx: (minX + maxX) / 2, cy: (minY + maxY) / 2, scale };
+    }
+    // model → screen
+    function mx(x) { const [w] = canvasSize(); return (x - view.cx) * view.scale + w / 2; }
+    function my(y) { const [, h] = canvasSize(); return h / 2 - (y - view.cy) * view.scale; }
+
+    function drawCanvas() {
+      const svg = $('canvas');
+      const pc = evalRes?.pieces?.[piece().id];
+      if (!view) fitView();
+      const [w, h] = canvasSize();
+      const S = [];
+      const stroke = piece().style?.stroke || '#2255aa';
+
+      // 1-inch grid
+      const x0 = view.cx - w / 2 / view.scale, x1 = view.cx + w / 2 / view.scale;
+      const y0 = view.cy - h / 2 / view.scale, y1 = view.cy + h / 2 / view.scale;
+      if (view.scale > 8) {
+        for (let gx = Math.floor(x0); gx <= Math.ceil(x1); gx++)
+          S.push(`<line x1="${mx(gx)}" y1="0" x2="${mx(gx)}" y2="${h}" stroke="${gx === 0 ? 'rgba(144,132,156,.4)' : 'rgba(128,128,128,.12)'}" stroke-width="1"/>`);
+        for (let gy = Math.floor(y0); gy <= Math.ceil(y1); gy++)
+          S.push(`<line x1="0" y1="${my(gy)}" x2="${w}" y2="${my(gy)}" stroke="${gy === 0 ? 'rgba(144,132,156,.4)' : 'rgba(128,128,128,.12)'}" stroke-width="1"/>`);
+      }
+
+      if (pc && !pc.skipped) {
+        for (const key of ['construction_lines', 'unclipped_construction_lines']) {
+          for (const [a, b] of pc[key])
+            S.push(`<line x1="${mx(a[0])}" y1="${my(a[1])}" x2="${mx(b[0])}" y2="${my(b[1])}" stroke="#999" stroke-width="1.2" stroke-dasharray="7 5"/>`);
+        }
+        for (const [a, b] of pc.dart_lines)
+          S.push(`<line x1="${mx(a[0])}" y1="${my(a[1])}" x2="${mx(b[0])}" y2="${my(b[1])}" stroke="#bbb" stroke-width="1.2" stroke-dasharray="4 4"/>`);
+        for (const seg of pc.segments) {
+          const d = seg.samples.map((q, i) => `${i ? 'L' : 'M'} ${mx(q[0]).toFixed(1)} ${my(q[1]).toFixed(1)}`).join(' ');
+          const isDart = seg.type === 'dart';
+          S.push(`<path d="${d}" fill="none" stroke="${isDart ? '#bbb' : stroke}" stroke-width="${isDart ? 1.6 : 2.4}" ${isDart ? '' : 'stroke-linecap="round"'}/>`);
+        }
+        for (const ann of pc.annotations)
+          S.push(`<text x="${mx(ann.pos[0])}" y="${my(ann.pos[1])}" fill="#aaa" font-size="14" font-family="monospace" text-anchor="middle">${ann.text.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</text>`);
+        const errNames = new Set(pc.errors.filter(e => e.where === 'point').map(e => e.name));
+        for (const [name, q] of Object.entries(pc.points)) {
+          const selected = clicks.includes(name) || selectedPoint === name;
+          S.push(`<g class="pt" data-name="${name}">` +
+            (selected ? `<circle cx="${mx(q[0])}" cy="${my(q[1])}" r="9" fill="none" stroke="var(--accent)" stroke-width="2"/>` : '') +
+            `<circle cx="${mx(q[0])}" cy="${my(q[1])}" r="4" fill="${errNames.has(name) ? 'var(--danger)' : 'var(--text-dark)'}"/>` +
+            `<circle cx="${mx(q[0])}" cy="${my(q[1])}" r="12" fill="transparent"/>` +
+            `<text x="${mx(q[0]) + 7}" y="${my(q[1]) - 7}" fill="var(--text-medium)" font-size="11" font-family="monospace" font-weight="bold">${name}</text></g>`);
+        }
+      } else if (pc && pc.skipped) {
+        S.push(`<text x="${w / 2}" y="${h / 2}" text-anchor="middle" fill="var(--text-light)" font-size="13" font-family="monospace">piece skipped — its optional measurement group has no preview values</text>`);
+      }
+      svg.innerHTML = S.join('');
+    }
+
+    // pan / zoom / click
+    (function initCanvasInteraction() {
+      const svg = $('canvas');
+      let panning = null;
+      svg.addEventListener('mousedown', e => {
+        if (e.target.closest('.pt')) return;
+        panning = { x: e.clientX, y: e.clientY, cx: view?.cx || 0, cy: view?.cy || 0 };
+        svg.classList.add('panning');
+      });
+      window.addEventListener('mousemove', e => {
+        if (!panning) return;
+        view.cx = panning.cx - (e.clientX - panning.x) / view.scale;
+        view.cy = panning.cy + (e.clientY - panning.y) / view.scale;
+        drawCanvas();
+      });
+      window.addEventListener('mouseup', () => { panning = null; svg.classList.remove('panning'); });
+      svg.addEventListener('wheel', e => {
+        e.preventDefault();
+        if (!view) return;
+        const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+        view.scale = Math.min(600, Math.max(4, view.scale * factor));
+        drawCanvas();
+      }, { passive: false });
+      svg.addEventListener('click', e => {
+        const g = e.target.closest('.pt');
+        if (!g) return;
+        handlePointClick(g.dataset.name);
+      });
+    })();
+
+    function toolHint() {
+      const need = { line: 2, dart: 2, quadratic: 3, cubic: 2 };
+      if (tool === 'select') return selectedPoint ? `selected: ${selectedPoint}` : 'click a point to select it';
+      if (tool === 'catmull') return `chain: ${clicks.join(' → ') || 'click points in order'} — then “finish chain”`;
+      const labels = { line: ['start', 'end'], dart: ['start', 'end'], quadratic: ['start', 'end', 'control point'], cubic: ['start', 'end'] };
+      return `${tool}: click ${labels[tool][clicks.length] || ''} (${clicks.length}/${need[tool]})`;
+    }
+    function updateToolUI() {
+      document.querySelectorAll('.tool').forEach(b => b.classList.toggle('active', b.dataset.tool === tool));
+      $('btnFinishChain').style.display = tool === 'catmull' ? '' : 'none';
+      $('toolHint').textContent = toolHint();
+    }
+    function handlePointClick(name) {
+      if (tool === 'select') { selectedPoint = name; renderPieceEditor(); drawCanvas(); updateToolUI();
+        document.querySelector(`[data-point="${name}"]`)?.scrollIntoView({ block: 'nearest' }); return; }
+      clicks.push(name);
+      const p = piece();
+      if ((tool === 'line' || tool === 'dart') && clicks.length === 2) {
+        p.segments.push({ type: tool, from: clicks[0], to: clicks[1] });
+        clicks = []; queueEval(true);
+      } else if (tool === 'quadratic' && clicks.length === 3) {
+        p.segments.push({ type: 'quadratic', from: clicks[0], to: clicks[1], cp: clicks[2] });
+        clicks = []; queueEval(true);
+      } else if (tool === 'cubic' && clicks.length === 2) {
+        p.segments.push({ type: 'cubic', from: clicks[0], to: clicks[1],
+          tangent_from: { dir: 'chord' }, tangent_to: { dir: 'chord' } });
+        clicks = []; queueEval(true);
+      }
+      updateToolUI(); drawCanvas();
+    }
+    document.querySelectorAll('.tool').forEach(b =>
+      b.addEventListener('click', () => { tool = b.dataset.tool; clicks = []; updateToolUI(); }));
+    $('btnFinishChain').addEventListener('click', () => {
+      if (clicks.length >= 3) {
+        piece().segments.push({ type: 'catmull_chain', through: clicks.slice() });
+        clicks = []; queueEval(true);
+      }
+      updateToolUI(); drawCanvas();
+    });
+    window.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { clicks = []; tool = 'select'; updateToolUI(); drawCanvas(); }
+    });
+    $('btnFit').addEventListener('click', () => { fitView(); drawCanvas(); });
+
+    /* ── Final render ───────────────────────────────────────────────────── */
+    async function runFinalRender() {
+      try {
+        const { data } = await api('POST', '/api/render', { project, values: previewValues, seam_allowance: 0.75 });
+        const wrap = $('finalRender');
+        wrap.innerHTML = '';
+        const cur = piece().id;
+        const order = [cur, ...Object.keys(data.svgs).filter(k => k !== cur)];
+        for (const pid of order) {
+          if (!data.svgs[pid]) continue;
+          const clean = data.svgs[pid].svg
+            .replace(/(<svg[^>]*?)\s+width="\d+"/, '$1').replace(/(<svg[^>]*?)\s+height="\d+"/, '$1');
+          wrap.appendChild(el('div', {}, [
+            el('p', { class: 'hint', text: `${pid} — ${data.svgs[pid].w}×${data.svgs[pid].h} in (0.75″ seam allowance)` }),
+            el('div', { html: clean }),
+          ]));
+        }
+        for (const e of data.errors) wrap.appendChild(el('p', { class: 'hint', style: 'color:var(--danger)', text: `⚠ ${e.piece}: ${e.messages.join('; ')}` }));
+        if (!order.some(pid => data.svgs[pid]) && !data.errors.length)
+          wrap.appendChild(el('p', { class: 'hint', text: 'nothing to render yet' }));
+      } catch (err) {
+        showBanner(['⚠ render: ' + err.message]);
+      }
+    }
+    $('btnFinal').addEventListener('click', () => {
+      finalMode = !finalMode;
+      $('btnFinal').classList.toggle('btn-accent', finalMode);
+      $('finalRender').classList.toggle('visible', finalMode);
+      if (finalMode) runFinalRender();
+    });
+
+    /* ── Save / export ──────────────────────────────────────────────────── */
+    $('btnSave').addEventListener('click', async () => {
+      try {
+        setStatus('saving…', 'loading');
+        await api('POST', '/api/project', { project });
+        setStatus('saved', 'ready');
+      } catch (err) { setStatus('error', 'error'); showBanner(['⚠ save: ' + err.message]); }
+    });
+    $('btnExport').addEventListener('click', async () => {
+      try {
+        setStatus('exporting…', 'loading');
+        let { status, data } = await api('POST', '/api/export', { project });
+        if (status === 409) {
+          if (!confirm(data.needs_confirm + '\n\nOverwrite?')) { setStatus('ready', 'ready'); return; }
+          ({ status, data } = await api('POST', '/api/export', { project, confirm_overwrite: true }));
+        }
+        if (data.error) throw new Error(data.error + (data.issues ? '\n' + data.issues.map(i => `${i.path}: ${i.message}`).join('\n') : ''));
+        setStatus('exported', 'ready');
+        alert(`Exported ${data.written.length} files:\n` + data.written.join('\n'));
+      } catch (err) { setStatus('error', 'error'); showBanner(['⚠ export: ' + err.message]); }
+    });
+
+    /* ── Add-buttons (left) ─────────────────────────────────────────────── */
+    $('btnAddGroup').addEventListener('click', () => {
+      project.measurementGroups.push({ id: 'group' + (project.measurementGroups.length + 1), label: 'Group', required: false, fields: [] });
+      renderMeasurements(); renderPieceEditor();
+    });
+    $('btnAddDerived').addEventListener('click', () => { project.derived.push({ name: '', expr: '' }); renderDerived(); });
+    $('btnAddOption').addEventListener('click', () => { project.options.push({ key: '', label: '', default: false }); renderOptions(); });
+    $('btnSaveSize').addEventListener('click', () => {
+      const label = prompt('Label for this test size (e.g. "M"):');
+      if (!label) return;
+      project.testSizes = project.testSizes || [];
+      project.testSizes.push({ label, values: { ...previewValues } });
+      renderTestSizes();
+    });
+
+    /* ── Boot ───────────────────────────────────────────────────────────── */
+    (async () => {
+      try {
+        setStatus('loading…', 'loading');
+        const { data } = await api('GET', '/api/project');
+        project = data.project;
+        $('projectPath').textContent = data.path + (data.exists ? '' : ' (new)');
+        renderMeta(); renderMeasurements(); renderDerived(); renderOptions();
+        renderPreviewValues(); renderPieceTabs(); renderPieceEditor();
+        refreshPointOptions(); updateToolUI();
+        await runEval();
+        fitView(); drawCanvas();
+      } catch (err) {
+        setStatus('load failed', 'error');
+        showBanner(['⚠ ' + err.message]);
+      }
+    })();
+  </script>
+</body>
+</html>

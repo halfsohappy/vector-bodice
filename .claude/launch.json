@@ -6,6 +6,12 @@
       "runtimeExecutable": "python3",
       "runtimeArgs": ["-m", "http.server", "8734", "-d", "docs"],
       "port": 8734
+    },
+    {
+      "name": "studio",
+      "runtimeExecutable": ".venv/bin/python",
+      "runtimeArgs": ["-m", "studio", "/private/tmp/claude-501/-Users-bugsy-cyberannabel-block/dfeddbcd-1e8c-429c-85e8-fd31519cfe9d/scratchpad/studio_demo.studio.json", "--port", "8766", "--no-browser"],
+      "port": 8766
     }
   ]
 }

@@ -1,0 +1,95 @@
+{
+  "id": "sleeve_studio",
+  "name": "sleeve block (studio example)",
+  "source": "recreation of patterns/bodice/sleeve.py in the studio project model",
+  "measurementGroups": [
+    {
+      "id": "sleeve",
+      "label": "Sleeve",
+      "required": true,
+      "fields": [
+        { "key": "sigma",   "label": "Shoulder to wrist", "title": "Shoulder to wrist length", "default": 23,  "min": 15, "max": 30, "step": 0.25 },
+        { "key": "upsilon", "label": "Underarm to elbow", "title": "Underarm to elbow length", "default": 10,  "min": 5,  "max": 18, "step": 0.25 },
+        { "key": "omega",   "label": "Underarm to wrist", "title": "Underarm to wrist length", "default": 17,  "min": 10, "max": 25, "step": 0.25 },
+        { "key": "xi",      "label": "Armscye",           "title": "Armscye circumference",    "default": 16,  "min": 10, "max": 24, "step": 0.25 },
+        { "key": "psi",     "label": "Wrist",             "title": "Wrist circumference",      "default": 6,   "min": 4,  "max": 12, "step": 0.25 }
+      ]
+    }
+  ],
+  "derived": [
+    { "name": "chi", "expr": "xi - 3" }
+  ],
+  "options": [],
+  "testSizes": [
+    { "label": "standard",  "values": { "sigma": 23, "upsilon": 10,   "omega": 17, "xi": 16, "psi": 6 } },
+    { "label": "short",     "values": { "sigma": 21, "upsilon": 9,    "omega": 15, "xi": 14, "psi": 5.5 } },
+    { "label": "long",      "values": { "sigma": 25, "upsilon": 11,   "omega": 19, "xi": 18, "psi": 6.5 } },
+    { "label": "narrow",    "values": { "sigma": 23, "upsilon": 10,   "omega": 17, "xi": 15, "psi": 7 } },
+    { "label": "wide cuff", "values": { "sigma": 24, "upsilon": 10.5, "omega": 18, "xi": 17, "psi": 5 } }
+  ],
+  "pieces": [
+    {
+      "id": "sleeve",
+      "label": "Sleeve",
+      "group": null,
+      "fold": null,
+      "points": [
+        { "name": "B", "kind": "formula", "x": "0",   "y": "0" },
+        { "name": "A", "kind": "formula", "x": "0",   "y": "sigma" },
+        { "name": "C", "kind": "formula", "x": "chi", "y": "sigma" },
+        { "name": "D", "kind": "formula", "x": "chi", "y": "0" },
+        { "name": "I", "kind": "formula", "x": "0",   "y": "omega - upsilon" },
+        { "name": "J", "kind": "formula", "x": "chi", "y": "omega - upsilon" },
+        { "name": "K", "kind": "formula", "x": "1.5", "y": "0" },
+        { "name": "G", "kind": "formula", "x": "0",   "y": "omega" },
+        { "name": "E", "kind": "formula", "x": "chi / 2", "y": "sigma" },
+        { "name": "H", "kind": "formula", "x": "chi", "y": "omega" },
+        { "name": "L", "kind": "formula", "x": "chi - 1.5", "y": "0" },
+        { "name": "F", "kind": "midpoint", "p1": "K", "p2": "L" },
+        { "name": "M", "kind": "formula", "x": "(E.x + G.x) / 2", "y": "(E.y + G.y) / 2 - 0.75" },
+        { "name": "N", "kind": "formula", "x": "chi / 3", "y": "liney(E, G, chi / 3) + 0.75" },
+        { "name": "O", "kind": "formula", "x": "2 * chi / 3", "y": "liney(H, E, 2 * chi / 3) + 1.0" },
+        { "name": "P", "kind": "on_line", "p1": "H", "p2": "E", "x": "5 * chi / 6" },
+        { "name": "Q", "kind": "formula", "x": "chi - 1.5 - psi / 2", "y": "0" },
+        { "name": "R", "kind": "formula", "x": "chi - 1.5 - psi / 2", "y": "4" }
+      ],
+      "segments": [
+        { "type": "line", "from": "K", "to": "G" },
+        { "type": "catmull_chain", "through": ["G", "M", "N", "E", "O", "P", "H"], "curve_seam": true },
+        { "type": "line", "from": "H", "to": "L" },
+        { "type": "line", "from": "L", "to": "Q" },
+        { "type": "dart", "from": "Q", "to": "R" },
+        { "type": "dart", "from": "R", "to": "Q" },
+        { "type": "line", "from": "Q", "to": "K" }
+      ],
+      "construction_lines": [
+        ["A", "B"], ["B", "D"], ["D", "C"], ["C", "A"],
+        ["G", "H"], ["E", "F"], ["I", "J"]
+      ],
+      "unclipped_construction_lines": [
+        ["G", "E"], ["E", "H"]
+      ],
+      "dart_lines": [
+        ["Q", "R"]
+      ],
+      "labels": {
+        "outline": ["K", "G", "M", "N", "E", "O", "P", "H", "L", "Q", "R"],
+        "interior": ["A", "B", "C", "D", "F", "I", "J"]
+      },
+      "label_offsets": {
+        "K": [0.5, 0.71], "G": [0.71, 0], "M": [0.71, 0], "N": [0, -0.8],
+        "E": [0, -0.8], "O": [0, -0.8], "P": [-0.71, 0], "H": [-0.71, 0],
+        "L": [-0.5, 0.71], "Q": [-0.71, 0.71], "R": [-0.71, 0],
+        "A": [0.4, -0.35], "B": [0.4, 0.35], "C": [-0.4, -0.35],
+        "D": [-0.4, 0.35], "F": [0.35, 0.4], "I": [0.4, 0], "J": [-0.4, 0]
+      },
+      "style": { "fill": "#d5f5e3", "stroke": "#2d6a4f" },
+      "text_annotations": [
+        { "text": "Back of Sleeve",  "x": "H.x - 1.5", "y": "H.y - 2.0" },
+        { "text": "Front of Sleeve", "x": "G.x + 1.5", "y": "G.y - 2.0" },
+        { "text": "Elbow Line",      "x": "E.x - 2.5", "y": "I.y + 0.45" },
+        { "text": "Bicep Line",      "x": "E.x - 2.5", "y": "G.y + 0.45" }
+      ]
+    }
+  ]
+}

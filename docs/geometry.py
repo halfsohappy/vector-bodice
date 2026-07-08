@@ -24,6 +24,88 @@ def xon_line(P1, P2, x):
     return np.array([x, y])
 
 
+# ── Construction operations ───────────────────────────────────────────────────
+# Drafting-instruction primitives, shared by hand-written pattern pieces,
+# the pattern studio evaluator, and studio-generated code.
+
+def liney(P1, P2, x):
+    """y of the line P1–P2 at the given x."""
+    return float(xon_line(P1, P2, x)[1])
+
+
+def linex(P1, P2, y):
+    """x of the line P1–P2 at the given y."""
+    m = (P1[0] - P2[0]) / (P1[1] - P2[1])
+    b = P2[0] - m * P2[1]
+    return float(m * y + b)
+
+
+def on_line(P1, P2, x=None, y=None):
+    """Point on the line P1–P2 at the given x (or y)."""
+    if x is not None:
+        return np.array([x, liney(P1, P2, x)])
+    return np.array([linex(P1, P2, y), y])
+
+
+def circle_h(center, radius, y, branch="left"):
+    """Intersection of a circle with the horizontal line at *y*.
+    branch: "left" or "right" of the center."""
+    dx2 = radius**2 - (y - center[1])**2
+    if dx2 < 0:
+        raise ValueError(
+            f"circle of radius {radius:g} around ({center[0]:g}, {center[1]:g}) "
+            f"does not reach the line y = {y:g}")
+    dx = np.sqrt(dx2)
+    x = center[0] - dx if branch == "left" else center[0] + dx
+    return np.array([x, y])
+
+
+def circle_v(center, radius, x, branch="down"):
+    """Intersection of a circle with the vertical line at *x*.
+    branch: "down" or "up" of the center."""
+    dy2 = radius**2 - (x - center[0])**2
+    if dy2 < 0:
+        raise ValueError(
+            f"circle of radius {radius:g} around ({center[0]:g}, {center[1]:g}) "
+            f"does not reach the line x = {x:g}")
+    dy = np.sqrt(dy2)
+    y = center[1] - dy if branch == "down" else center[1] + dy
+    return np.array([x, y])
+
+
+def along(start, toward, dist):
+    """Point at *dist* from *start* in the direction of *toward*."""
+    direction = (toward - start) / np.linalg.norm(toward - start)
+    return start + dist * direction
+
+
+def intersect_lines(A1, A2, B1, B2):
+    """Intersection of the (infinite) lines A1–A2 and B1–B2."""
+    d1 = A2 - A1
+    d2 = B2 - B1
+    denom = d1[0] * d2[1] - d1[1] * d2[0]
+    if abs(denom) < 1e-12:
+        raise ValueError("lines are parallel — no intersection")
+    t = ((B1[0] - A1[0]) * d2[1] - (B1[1] - A1[1]) * d2[0]) / denom
+    return A1 + t * d1
+
+
+def cubic_from_tangents(P0, P1, dir0, len0, dir1, len1, t):
+    """Cubic Bézier from P0→P1 with tangent directions at both ends.
+
+    dir0/dir1 are direction-of-travel vectors at the start/end (need not be
+    unit length); len0/len1 are the control-handle lengths.
+        CP1 = P0 + len0 · unit(dir0)
+        CP2 = P1 − len1 · unit(dir1)
+    The existing curve_* constructions (armhole, neck) are special cases.
+    """
+    d0 = np.asarray(dir0, float)
+    d1 = np.asarray(dir1, float)
+    CP1 = P0 + len0 * d0 / np.linalg.norm(d0)
+    CP2 = P1 - len1 * d1 / np.linalg.norm(d1)
+    return cubic_bezier(P0, CP1, CP2, P1, t)
+
+
 def catmull_rom_segment(P_prev, P0, P1, P_next, t):
     """Cubic Bézier from P0→P1 using Catmull-Rom tangents from neighbours."""
     CP1 = P0 + (P1 - P_prev) / 6.0
