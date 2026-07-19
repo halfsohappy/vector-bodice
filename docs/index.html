@@ -492,9 +492,17 @@
       gap: 7px;
       flex-shrink: 0;
       align-items: center;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
     }
     .download-bar.visible { display: flex; }
-    .dl-spacer { flex: 1; }
+    .download-bar::-webkit-scrollbar { height: 6px; }
+    .download-bar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+    .download-bar::-webkit-scrollbar-track { background: transparent; }
+    .download-bar .btn { flex-shrink: 0; }
+    .dl-spacer { flex: 1 0 14px; }
 
     /* Responsive */
     @media (max-width: 680px) {
@@ -522,10 +530,9 @@
       /* Taller primary button */
       .btn { padding: 11px 18px; }
 
-      /* Download bar: wrap and fill width */
-      .download-bar { flex-wrap: wrap; }
+      /* Download bar: stays a scrollable row (too many pieces to wrap nicely) */
       .dl-spacer { display: none; }
-      .download-bar .btn { flex: 1 1 auto; }
+      .download-bar .btn { padding: 11px 16px; }
 
       /* Tabs: larger touch target */
       .tab { padding: 10px 18px; }
