@@ -75,7 +75,7 @@ def _tighten_offset(pt, dx_in, dy_in, poly, name=""):
     return udx * hi, udy * hi
 
 
-def _seam_runs(segments):
+def _seam_runs(segments, merge_consecutive=True):
     """Find consecutive runs of seam-eligible edges in a closed outline.
 
     Only plain "line" edges (not "dart", "quadratic", or "cubic_curve") receive
@@ -83,6 +83,15 @@ def _seam_runs(segments):
     no-seam gaps.  The outline is traversed as a closed polygon; runs that
     cross the wrap-around join (e.g. back waist XX→GG→A) are detected and
     returned as a single run.
+
+    merge_consecutive=False returns each seam-eligible segment as its own
+    2-point run instead of merging adjacent "line" segments together.  Use
+    this for pieces (e.g. a waistband rectangle) where adjacent straight
+    edges legitimately need different seam allowances — with the default
+    merging, seam_allowance_fn only ever sees the whole merged run and can't
+    tell the edges apart.  Pieces with no adjacent "line"-vs-"line" edges
+    (like the bodice, always separated by darts/curves) are unaffected
+    either way.
 
     Returns a list of open polylines (each an np.array of model-space points).
     """
@@ -103,6 +112,9 @@ def _seam_runs(segments):
     n = len(flat)
     if not n:
         return []
+
+    if not merge_consecutive:
+        return [np.array([p0, p1]) for is_seam, p0, p1 in flat if is_seam]
 
     # Find first no-seam edge; start traversal after it to avoid splitting
     # a run that wraps around the polygon boundary
@@ -132,10 +144,19 @@ def _seam_runs(segments):
     return runs
 
 
-def _seam_runs_no_waist(segments, seam_allowance, seam_allowance_fn):
+def _seam_runs_no_waist(segments, seam_allowance, seam_allowance_fn, waist_detect=True,
+                         merge_consecutive=True):
     """Like _seam_runs but omits bottom-horizontal (waist) edges.
     The back waist (FF→YY, XX→GG) and front waist (D→WW, VV→Q) lines receive
     no seam allowance — they are the hem/cut edge.
+
+    This position-based heuristic assumes the piece's only "no standard SA"
+    edge sits at the bottom of its bounding box (true for the bodice/sleeve).
+    Pieces without that shape (e.g. a waistband or pocket rectangle, where a
+    real seam edge may legitimately sit at the bounding-box minimum) should
+    pass waist_detect=False and rely entirely on seam_allowance_fn instead —
+    otherwise that edge would be silently dropped before seam_allowance_fn
+    ever sees it.
 
     Returns list of (run, sa) pairs: run is np.array of model-space points,
     sa is the float seam allowance for that run (already > 0).
@@ -146,13 +167,14 @@ def _seam_runs_no_waist(segments, seam_allowance, seam_allowance_fn):
     WAIST_BAND = 0.25   # waist must be within 0.25" of the outline minimum y
 
     result = []
-    for run in _seam_runs(segments):
+    for run in _seam_runs(segments, merge_consecutive=merge_consecutive):
         n         = len(run)
         sub_start = 0
         for i in range(n - 1):
             p0y = float(run[i,     1])
             p1y = float(run[i + 1, 1])
-            is_waist = (abs(p1y - p0y) < WAIST_DY and
+            is_waist = (waist_detect and
+                        abs(p1y - p0y) < WAIST_DY and
                         max(p0y, p1y)  < min_y + WAIST_BAND)
             if is_waist:
                 if i > sub_start:          # flush sub-run before waist edge
@@ -540,15 +562,22 @@ def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
                outline_labels, interior_labels, seam_allowance=0,
                seam_allowance_fn=None, label_offsets=None,
                curve_seam_segments=None, curve_seam_allowance=None,
-               unclipped_construction_lines=None, text_annotations=None):
+               unclipped_construction_lines=None, text_annotations=None,
+               waist_detect=True, merge_consecutive=True):
     # Compute seam allowance runs (open polylines) in model space for bbox.
     # seam_allowance_fn, if provided, takes a run (np.array of points) and returns
     # the SA for that run, allowing per-run overrides.
-    # Waist (bottom horizontal) edges are always excluded from seam allowance.
+    # Waist (bottom horizontal) edges are excluded from seam allowance by
+    # default (waist_detect=True) — pass False for pieces where no edge
+    # should get this automatic, position-based exclusion.
+    # merge_consecutive=False keeps adjacent straight edges as separate runs
+    # so seam_allowance_fn can assign them different allowances.
     outline_poly  = _sample_outline(outline)          # dense Nx2, reused below
     centroid_temp = outline_poly.mean(axis=0)
     seam_offset_runs = []   # list of np.array (model-space offset polyline per run)
-    for run, sa in _seam_runs_no_waist(outline, seam_allowance, seam_allowance_fn):
+    for run, sa in _seam_runs_no_waist(outline, seam_allowance, seam_allowance_fn,
+                                        waist_detect=waist_detect,
+                                        merge_consecutive=merge_consecutive):
         seam_offset_runs.append(_offset_open_polyline(run, sa, centroid_temp))
 
     # Curve-based seam allowance (sleeve cap, etc.)
