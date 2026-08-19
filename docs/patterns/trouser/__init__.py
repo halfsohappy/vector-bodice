@@ -1,14 +1,14 @@
-"""Culotte pattern.
+"""Trouser pattern — Foundation 2.
 
-Built on patterns/skirt_aline (itself built on patterns/skirt_basic) —
-see front_panel.py/back_panel.py for the crotch-curve derivation notes,
-and waistband.py for the waistband.
+A fresh draft (not built on the skirt chain) — see front_panel.py/
+back_panel.py for the drafting notes and approximations, and
+waistband.py for the waistband (also reused by patterns/slack and
+patterns/jean).
 
-CLI: python -m patterns.culotte --help
+CLI: python -m patterns.trouser --help
 """
 
 from render import _write_svg
-from patterns.skirt_basic import dart_info
 from . import front_panel, back_panel, waistband
 from . import settings
 
@@ -16,13 +16,10 @@ from . import settings
 # ── Build ─────────────────────────────────────────────────────────────────────
 
 def build(waist_arc_front, waist_arc_back, hip_arc_front, hip_arc_back,
-          hip_depth_front, hip_depth_back, crotch_depth, skirt_length):
-    """Draft every piece of the culotte.  Returns {piece_id: SimpleNamespace}."""
-    info = dart_info(waist_arc_front, waist_arc_back, hip_arc_front, hip_arc_back)
-    front = front_panel.build(hip_arc_front, hip_depth_front, skirt_length,
-                              info.front_count, info.front_intake, crotch_depth)
-    back = back_panel.build(hip_arc_back, hip_depth_back, skirt_length,
-                            info.back_count, info.back_intake, crotch_depth)
+          crotch_depth, pant_length):
+    """Draft every piece of the trouser.  Returns {piece_id: SimpleNamespace}."""
+    front = front_panel.build(hip_arc_front, waist_arc_front, crotch_depth, pant_length)
+    back = back_panel.build(hip_arc_back, waist_arc_back, crotch_depth, pant_length)
     waist_total = 2 * (waist_arc_front + waist_arc_back)
     band = waistband.build(waist_total)
     return {"front_panel": front, "back_panel": back, "waistband": band}
@@ -55,7 +52,8 @@ def _waistband_args(ns, seam_allowance, white_fill):
         outline_labels={name: getattr(ns, name) for name in settings.WAISTBAND_OUTLINE_LABELS},
         interior_labels={},
         seam_allowance=seam_allowance,
-        waist_detect=False,
+        waist_detect=False,      # all 4 edges are plain lines — see waistband.py
+        merge_consecutive=False,
     )
 
 
@@ -78,8 +76,7 @@ def render_web(params):
     pieces = build(
         float(params["waist_arc_front"]), float(params["waist_arc_back"]),
         float(params["hip_arc_front"]), float(params["hip_arc_back"]),
-        float(params["hip_depth_front"]), float(params["hip_depth_back"]),
-        float(params["crotch_depth"]), float(params["skirt_length"]),
+        float(params["crotch_depth"]), float(params["pant_length"]),
     )
     args = _all_svg_args(pieces, float(params.get("seam_allowance", 0.75)),
                          bool(params.get("white_fill", False)))
@@ -95,11 +92,10 @@ def render_web(params):
 # ── Render: SVG files ─────────────────────────────────────────────────────────
 
 def render(waist_arc_front, waist_arc_back, hip_arc_front, hip_arc_back,
-           hip_depth_front, hip_depth_back, crotch_depth, skirt_length,
-           prefix="culotte", seam_allowance=0.75):
-    """Render every piece of the culotte to <prefix>_<piece>.svg files."""
+           crotch_depth, pant_length, prefix="trouser", seam_allowance=0.75):
+    """Render every piece of the trouser to <prefix>_<piece>.svg files."""
     pieces = build(waist_arc_front, waist_arc_back, hip_arc_front, hip_arc_back,
-                   hip_depth_front, hip_depth_back, crotch_depth, skirt_length)
+                   crotch_depth, pant_length)
     args = _all_svg_args(pieces, seam_allowance, white_fill=False)
     for piece_id, kw in args.items():
         _write_svg(f"{prefix}_{piece_id}.svg", kw.pop("outline"), **kw)

@@ -55,6 +55,7 @@ def _waistband_args(ns, seam_allowance, white_fill):
         outline_labels={name: getattr(ns, name) for name in settings.WAISTBAND_OUTLINE_LABELS},
         interior_labels={},
         seam_allowance=seam_allowance,
+        waist_detect=False,
     )
 
 

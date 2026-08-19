@@ -79,6 +79,13 @@ def along(start, toward, dist):
     return start + dist * direction
 
 
+def curve_length(func, n=200):
+    """Numerical arc length of a parametric curve func(t), t in [0, 1]."""
+    ts = np.linspace(0, 1, n)
+    pts = np.array([func(t) for t in ts])
+    return float(np.sum(np.linalg.norm(np.diff(pts, axis=0), axis=1)))
+
+
 def intersect_lines(A1, A2, B1, B2):
     """Intersection of the (infinite) lines A1–A2 and B1–B2."""
     d1 = A2 - A1

@@ -1,0 +1,46 @@
+{
+  "id": "trouser",
+  "name": "trouser",
+  "source": "adapted from Pattern Making for Fashion Design, 5th ed. (Helen Joseph-Armstrong), \"Trouser — Foundation 2,\" p.573-576",
+  "notes": [
+    "Dart placement (how far each dart sits from center front/back) is estimated by spacing darts evenly across the waist ease-zone, since the book marks them at fixed, non-scaling inches rather than a formula.",
+    "The waistline is drafted as a straight line through the dart legs rather than the book's own slightly-curved waistline — the book itself describes this curve as only slight.",
+    "The hip curve and the outseam/inseam legs are smooth mathematical approximations of the book's hand-drafting curve tool, not a literal reproduction of its shape.",
+    "The hem edge is left as the finished cut line, matching every other pant/skirt piece in this tool — add your own hem allowance (the book suggests about 1in) separately when cutting.",
+    "The seam-allowance preview line isn't drawn along the curved edges (hip curve, crotch curve, inseam) — only the straight edges — the same as this tool's other curved-seam pieces (e.g. culotte's crotch curve). Add allowance by eye along those curves when cutting."
+  ],
+  "files": [
+    "__init__.py",
+    "front_panel.py",
+    "back_panel.py",
+    "waistband.py",
+    "settings.py"
+  ],
+  "measurementGroups": [
+    {
+      "id": "main",
+      "label": "Measurements",
+      "required": true,
+      "fields": [
+        { "key": "waist_arc_front", "label": "Front waist arc", "title": "Center front to side seam, at the waist",       "default": 7.0,  "min": 5,  "max": 12, "step": 0.125 },
+        { "key": "waist_arc_back",  "label": "Back waist arc",  "title": "Center back to side seam, at the waist",        "default": 7.0,  "min": 5,  "max": 12, "step": 0.125 },
+        { "key": "hip_arc_front",   "label": "Front hip arc",   "title": "Center front to side seam, at the fullest hip", "default": 9.5,  "min": 7,  "max": 16, "step": 0.125 },
+        { "key": "hip_arc_back",    "label": "Back hip arc",    "title": "Center back to side seam, at the fullest hip",  "default": 9.5,  "min": 7,  "max": 16, "step": 0.125 },
+        { "key": "crotch_depth",    "label": "Crotch depth",    "title": "Waist down to seat level, while seated",        "default": 10.5, "min": 8,  "max": 14, "step": 0.25 },
+        { "key": "pant_length",     "label": "Pant length",     "title": "Waist to ankle, along the side",                "default": 40,   "min": 28, "max": 46, "step": 0.25 }
+      ]
+    }
+  ],
+  "options": [],
+  "pieces": [
+    { "id": "front_panel", "label": "Front" },
+    { "id": "back_panel",  "label": "Back" },
+    { "id": "waistband",   "label": "Waistband" }
+  ],
+  "testSizes": [
+    { "label": "S",  "values": { "waist_arc_front": 6.5, "waist_arc_back": 6.5, "hip_arc_front": 8.75, "hip_arc_back": 8.75, "crotch_depth": 10.0, "pant_length": 38 } },
+    { "label": "M",  "values": { "waist_arc_front": 7.0, "waist_arc_back": 7.0, "hip_arc_front": 9.5,  "hip_arc_back": 9.5,  "crotch_depth": 10.5, "pant_length": 40 } },
+    { "label": "L",  "values": { "waist_arc_front": 7.75, "waist_arc_back": 7.75, "hip_arc_front": 10.5, "hip_arc_back": 10.5, "crotch_depth": 10.75, "pant_length": 41 } },
+    { "label": "XL", "values": { "waist_arc_front": 8.5, "waist_arc_back": 8.5, "hip_arc_front": 11.5, "hip_arc_back": 11.5, "crotch_depth": 11.0, "pant_length": 42 } }
+  ]
+}
