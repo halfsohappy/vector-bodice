@@ -2,6 +2,10 @@
   "id": "ines_skirt",
   "name": "INES skirt",
   "source": "adapted from the \"INES Skirt\" tutorial by The Mystical Attic",
+  "notes": [
+    "The waist seam is drafted as the finished stitch line, with seam allowance added as a proper curved offset for cutting — slightly more generous (about 1–2mm) than the original tutorial's cut line at this size, which isn't a meaningful difference in practice.",
+    "The pocket bag, ties, and bias strip are drafted at the tutorial's exact cut dimensions with one standard seam allowance applied evenly, rather than reproducing the tutorial's mix of a 0.7cm allowance on some edges and 1.5cm on others."
+  ],
   "files": [
     "__init__.py",
     "skirt_panel.py",

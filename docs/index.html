@@ -203,6 +203,28 @@
       margin-bottom: 10px;
       line-height: 1.4;
     }
+
+    /* Pattern modeling notes — collapsed by default */
+    .notes-details { margin-top: 8px; }
+    .notes-details summary {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-medium);
+      cursor: pointer;
+      list-style: revert;
+      user-select: none;
+    }
+    .notes-details summary:hover { color: var(--accent); }
+    .notes-details[open] summary { color: var(--accent); margin-bottom: 5px; }
+    .notes-list {
+      font-size: 10px;
+      color: var(--text-medium);
+      line-height: 1.5;
+      padding-left: 15px;
+      margin: 0;
+    }
+    .notes-list li { margin-bottom: 5px; }
+    .notes-list li:last-child { margin-bottom: 0; }
     .card-header {
       display: flex;
       align-items: center;
@@ -575,6 +597,10 @@
             <select id="patternSelect" title="Choose which pattern to draft"></select>
           </div>
           <p class="hint-text" id="patternSource" style="margin:8px 0 0"></p>
+          <details class="notes-details" id="patternNotesDetails" style="display:none">
+            <summary>modeling notes</summary>
+            <ul class="notes-list" id="patternNotesList"></ul>
+          </details>
         </div><!-- /card pattern -->
 
         <div class="card">
@@ -703,6 +729,17 @@
     }
 
     /* ── Pattern UI (built from the manifest) ────────────────────────────── */
+    function buildPatternNotes(p) {
+      const details = $('patternNotesDetails');
+      const list = $('patternNotesList');
+      list.innerHTML = '';
+      const notes = p.notes || [];
+      if (!notes.length) { details.style.display = 'none'; details.open = false; return; }
+      for (const note of notes) list.appendChild(el('li', { text: note }));
+      details.style.display = '';
+      details.open = false;   // collapsed by default, even when switching patterns
+    }
+
     function buildMeasurementFields(p) {
       const root = $('measureFields');
       root.innerHTML = '';
@@ -762,6 +799,7 @@
     function selectPattern(id) {
       currentPattern = PATTERNS[id];
       $('patternSource').textContent = currentPattern.source || '';
+      buildPatternNotes(currentPattern);
       buildMeasurementFields(currentPattern);
       buildPatternOptions(currentPattern);
       buildPieceViews(currentPattern);

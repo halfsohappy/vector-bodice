@@ -1,0 +1,47 @@
+{
+  "id": "culotte",
+  "name": "culotte",
+  "source": "adapted from Pattern Making for Fashion Design, 5th ed. (Helen Joseph-Armstrong), \"Culotte — Foundation 1,\" p.571-572, built on the A-line skirt",
+  "notes": [
+    "Dart placement (how far each dart sits from center front/back) is estimated by spacing darts evenly across the waist, since the source book's exact placement value wasn't available.",
+    "The waistline and side-seam curves are smooth mathematical approximations of the book's hand-drafting curve tool, not a literal reproduction of its shape.",
+    "The flare below the hip is computed as one combined formula, standing in for the book's two separate paper steps (closing a dart to swing the hem out, then a further side-seam widening). Same finished shape, simpler math.",
+    "The crotch curve is a smooth mathematical blend standing in for the book's hand-drafted curve, matched to its start and end direction rather than its exact hand-drawn path."
+  ],
+  "files": [
+    "__init__.py",
+    "front_panel.py",
+    "back_panel.py",
+    "waistband.py",
+    "settings.py"
+  ],
+  "measurementGroups": [
+    {
+      "id": "main",
+      "label": "Measurements",
+      "required": true,
+      "fields": [
+        { "key": "waist_arc_front", "label": "Front waist arc", "title": "Center front to side seam, at the waist",        "default": 7.0,  "min": 5,  "max": 12, "step": 0.125 },
+        { "key": "waist_arc_back",  "label": "Back waist arc",  "title": "Center back to side seam, at the waist",         "default": 7.0,  "min": 5,  "max": 12, "step": 0.125 },
+        { "key": "hip_arc_front",   "label": "Front hip arc",   "title": "Center front to side seam, at the fullest hip",  "default": 9.5,  "min": 7,  "max": 16, "step": 0.125 },
+        { "key": "hip_arc_back",    "label": "Back hip arc",    "title": "Center back to side seam, at the fullest hip",   "default": 9.5,  "min": 7,  "max": 16, "step": 0.125 },
+        { "key": "hip_depth_front", "label": "Front hip depth", "title": "Waist down to the fullest part of the hip, at center front", "default": 9.0,  "min": 6,  "max": 13, "step": 0.25 },
+        { "key": "hip_depth_back",  "label": "Back hip depth",  "title": "Waist down to the fullest part of the hip, at center back",  "default": 9.0,  "min": 6,  "max": 13, "step": 0.25 },
+        { "key": "crotch_depth",    "label": "Crotch depth",    "title": "Waist down to seat level, while seated",         "default": 10.5, "min": 8,  "max": 14, "step": 0.25 },
+        { "key": "skirt_length",    "label": "Skirt length",    "title": "Waist to hem, along the side seam",              "default": 24,   "min": 16, "max": 45, "step": 0.25 }
+      ]
+    }
+  ],
+  "options": [],
+  "pieces": [
+    { "id": "front_panel", "label": "Front" },
+    { "id": "back_panel",  "label": "Back" },
+    { "id": "waistband",   "label": "Waistband" }
+  ],
+  "testSizes": [
+    { "label": "S",  "values": { "waist_arc_front": 6.5, "waist_arc_back": 6.5, "hip_arc_front": 8.75, "hip_arc_back": 8.75, "hip_depth_front": 8.5, "hip_depth_back": 8.5, "crotch_depth": 10.0, "skirt_length": 22 } },
+    { "label": "M",  "values": { "waist_arc_front": 7.0, "waist_arc_back": 7.0, "hip_arc_front": 9.5,  "hip_arc_back": 9.5,  "hip_depth_front": 9.0, "hip_depth_back": 9.0, "crotch_depth": 10.5, "skirt_length": 24 } },
+    { "label": "L",  "values": { "waist_arc_front": 7.75, "waist_arc_back": 7.75, "hip_arc_front": 10.5, "hip_arc_back": 10.5, "hip_depth_front": 9.25, "hip_depth_back": 9.25, "crotch_depth": 10.75, "skirt_length": 25 } },
+    { "label": "XL", "values": { "waist_arc_front": 8.5, "waist_arc_back": 8.5, "hip_arc_front": 11.5, "hip_arc_back": 11.5, "hip_depth_front": 9.5, "hip_depth_back": 9.5, "crotch_depth": 11.0, "skirt_length": 26 } }
+  ]
+}

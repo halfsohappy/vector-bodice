@@ -1,0 +1,104 @@
+"""Culotte pattern.
+
+Built on patterns/skirt_aline (itself built on patterns/skirt_basic) —
+see front_panel.py/back_panel.py for the crotch-curve derivation notes,
+and waistband.py for the waistband.
+
+CLI: python -m patterns.culotte --help
+"""
+
+from render import _write_svg
+from patterns.skirt_basic import dart_info
+from . import front_panel, back_panel, waistband
+from . import settings
+
+
+# ── Build ─────────────────────────────────────────────────────────────────────
+
+def build(waist_arc_front, waist_arc_back, hip_arc_front, hip_arc_back,
+          hip_depth_front, hip_depth_back, crotch_depth, skirt_length):
+    """Draft every piece of the culotte.  Returns {piece_id: SimpleNamespace}."""
+    info = dart_info(waist_arc_front, waist_arc_back, hip_arc_front, hip_arc_back)
+    front = front_panel.build(hip_arc_front, hip_depth_front, skirt_length,
+                              info.front_count, info.front_intake, crotch_depth)
+    back = back_panel.build(hip_arc_back, hip_depth_back, skirt_length,
+                            info.back_count, info.back_intake, crotch_depth)
+    waist_total = 2 * (waist_arc_front + waist_arc_back)
+    band = waistband.build(waist_total)
+    return {"front_panel": front, "back_panel": back, "waistband": band}
+
+
+# ── Piece assembly helpers ────────────────────────────────────────────────────
+
+def _panel_args(ns, corner_labels, interior_labels, style, seam_allowance, white_fill):
+    outline_labels = {name: getattr(ns, name) for name in corner_labels}
+    outline_labels.update(settings.dart_outline_labels(ns))
+    return dict(
+        outline=ns.outline,
+        construction_lines=ns.construction_lines,
+        dart_lines=ns.dart_lines,
+        fill="white" if white_fill else style["fill"],
+        stroke=style["stroke"],
+        outline_labels=outline_labels,
+        interior_labels={name: getattr(ns, name) for name in interior_labels},
+        seam_allowance=seam_allowance,
+    )
+
+
+def _waistband_args(ns, seam_allowance, white_fill):
+    return dict(
+        outline=ns.outline,
+        construction_lines=ns.construction_lines,
+        dart_lines=ns.dart_lines,
+        fill="white" if white_fill else settings.WAISTBAND_STYLE["fill"],
+        stroke=settings.WAISTBAND_STYLE["stroke"],
+        outline_labels={name: getattr(ns, name) for name in settings.WAISTBAND_OUTLINE_LABELS},
+        interior_labels={},
+        seam_allowance=seam_allowance,
+    )
+
+
+def _all_svg_args(pieces, seam_allowance, white_fill):
+    return {
+        "front_panel": _panel_args(pieces["front_panel"], settings.FRONT_CORNER_LABELS,
+                                   settings.FRONT_INTERIOR_LABELS, settings.FRONT_STYLE,
+                                   seam_allowance, white_fill),
+        "back_panel": _panel_args(pieces["back_panel"], settings.BACK_CORNER_LABELS,
+                                  settings.BACK_INTERIOR_LABELS, settings.BACK_STYLE,
+                                  seam_allowance, white_fill),
+        "waistband": _waistband_args(pieces["waistband"], seam_allowance, white_fill),
+    }
+
+
+# ── Render: SVG strings (web interface) ───────────────────────────────────────
+
+def render_web(params):
+    """Generic web-frontend entry point (see patterns/bodice/__init__.py)."""
+    pieces = build(
+        float(params["waist_arc_front"]), float(params["waist_arc_back"]),
+        float(params["hip_arc_front"]), float(params["hip_arc_back"]),
+        float(params["hip_depth_front"]), float(params["hip_depth_back"]),
+        float(params["crotch_depth"]), float(params["skirt_length"]),
+    )
+    args = _all_svg_args(pieces, float(params.get("seam_allowance", 0.75)),
+                         bool(params.get("white_fill", False)))
+    out = {}
+    for piece_id, kw in args.items():
+        svg, w, h = _write_svg(None, kw.pop("outline"), **kw)
+        out[piece_id] = svg
+        out[f"{piece_id}_w"] = w
+        out[f"{piece_id}_h"] = h
+    return out
+
+
+# ── Render: SVG files ─────────────────────────────────────────────────────────
+
+def render(waist_arc_front, waist_arc_back, hip_arc_front, hip_arc_back,
+           hip_depth_front, hip_depth_back, crotch_depth, skirt_length,
+           prefix="culotte", seam_allowance=0.75):
+    """Render every piece of the culotte to <prefix>_<piece>.svg files."""
+    pieces = build(waist_arc_front, waist_arc_back, hip_arc_front, hip_arc_back,
+                   hip_depth_front, hip_depth_back, crotch_depth, skirt_length)
+    args = _all_svg_args(pieces, seam_allowance, white_fill=False)
+    for piece_id, kw in args.items():
+        _write_svg(f"{prefix}_{piece_id}.svg", kw.pop("outline"), **kw)
