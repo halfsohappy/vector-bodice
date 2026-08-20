@@ -497,6 +497,42 @@
       max-width: 100%;
       width: 100%;
     }
+
+    .rect-callout {
+      display: none;
+      background: var(--accent-dim);
+      border: 1px solid var(--border-focus);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      margin-bottom: 14px;
+    }
+    .rect-callout .rect-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-dark);
+      margin-bottom: 10px;
+    }
+    .rect-callout .rect-dims {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .rect-callout .rect-dim-label {
+      font-size: 10px;
+      color: var(--text-medium);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .rect-callout .rect-dim-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-dark);
+    }
+    .rect-callout .rect-hint {
+      margin-top: 10px;
+      font-size: 11px;
+      color: var(--text-medium);
+    }
     .svg-container svg {
       width: 100%;
       height: auto;
@@ -702,8 +738,12 @@
 
     function showTab(tab) {
       activeTab = tab;
-      for (const piece of currentPattern.pieces)
-        $('svg-' + piece.id).style.display = piece.id === tab ? 'block' : 'none';
+      for (const piece of currentPattern.pieces) {
+        const isActive = piece.id === tab;
+        const rectBox = $('rect-' + piece.id);
+        $('svg-' + piece.id).style.display = isActive ? 'block' : 'none';
+        rectBox.style.display = isActive && rectBox.dataset.hasRect === '1' ? 'block' : 'none';
+      }
       document.querySelectorAll('#tabs .tab').forEach(b =>
         b.classList.toggle('active', b.dataset.tab === tab));
     }
@@ -726,6 +766,35 @@
       }
       for (const c of children) node.appendChild(c);
       return node;
+    }
+
+    /* ── Rectangle-dimensions callout (plain rectangles need no printing) ── */
+    function buildRectCallout(box, rect) {
+      if (!rect) {
+        box.dataset.hasRect = '0';
+        box.innerHTML = '';
+        return;
+      }
+      box.dataset.hasRect = '1';
+      const fmt = n => n.toFixed(2).replace(/\.00$/, '');
+      const sameSize = Math.abs(rect.finished_w - rect.cut_w) < 0.005 &&
+                       Math.abs(rect.finished_h - rect.cut_h) < 0.005;
+      const dims = [el('div', {}, [
+        el('div', { class: 'rect-dim-label', text: sameSize ? 'Dimensions' : 'Finished' }),
+        el('div', { class: 'rect-dim-value', text: `${fmt(rect.finished_w)} × ${fmt(rect.finished_h)} in` }),
+      ])];
+      if (!sameSize) {
+        dims.push(el('div', {}, [
+          el('div', { class: 'rect-dim-label', text: 'Cut (with seam allowance)' }),
+          el('div', { class: 'rect-dim-value', text: `${fmt(rect.cut_w)} × ${fmt(rect.cut_h)} in` }),
+        ]));
+      }
+      box.innerHTML = '';
+      box.appendChild(el('div', { class: 'rect-title',
+        text: '📏 Plain rectangle — no need to print, draft it directly with a ruler.' }));
+      box.appendChild(el('div', { class: 'rect-dims' }, dims));
+      box.appendChild(el('div', { class: 'rect-hint',
+        text: 'The preview below still shows labels and construction lines for reference.' }));
     }
 
     /* ── Pattern UI (built from the manifest) ────────────────────────────── */
@@ -781,6 +850,8 @@
           class: 'tab' + (i === 0 ? ' active' : ''),
           'data-tab': piece.id, text: piece.label,
         }));
+        const rectBox = el('div', { class: 'rect-callout', id: 'rect-' + piece.id });
+        $('svgViews').appendChild(rectBox);
         const view = el('div', { class: 'svg-container', id: 'svg-' + piece.id });
         view.style.display = 'none';
         $('svgViews').appendChild(view);
@@ -982,6 +1053,7 @@ json.dumps(_mod.render_web(json.loads(_params_json)))
           } else {
             $('svg-' + piece.id).innerHTML = '';
           }
+          buildRectCallout($('rect-' + piece.id), result[piece.id + '_rect']);
           document.querySelector(`#tabs .tab[data-tab="${piece.id}"]`)
             .style.display = has ? '' : 'none';
           $('dl-' + piece.id).style.display = has ? '' : 'none';

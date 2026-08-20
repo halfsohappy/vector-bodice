@@ -134,8 +134,8 @@ def test_culotte_crotch():
         pieces = culotte.build(**sz)
         fp, bp = pieces["front_panel"], pieces["back_panel"]
 
-        front_crotch_w = fp.crotch_out[0] - fp.H[0]
-        back_crotch_w = bp.crotch_out[0] - bp.D[0]
+        front_crotch_w = fp.D[0] - fp.H[0]
+        back_crotch_w = bp.H[0] - bp.D[0]
         check(0 < front_crotch_w < fp.front_width,
               f"culotte/{sz}: front crotch point within panel bounds")
         check(0 < back_crotch_w < bp.back_width,
@@ -147,13 +147,13 @@ def test_culotte_crotch():
               f"culotte/{sz}: back crotch extension wider than front (book's own rule)")
 
         # crotch curve endpoints should not coincide (a real, visible curve)
-        check(np.linalg.norm(fp.crotch_out - fp.crotch_top) > 1.0,
+        check(np.linalg.norm(fp.D - fp.X) > 1.0,
               f"culotte/{sz}: front crotch curve has real extent")
 
         # the new inseam hem point sits directly below the crotch point (straight inseam)
-        check(close(fp.new_hem_center[0], fp.crotch_out[0]),
+        check(close(fp.E[0], fp.D[0]),
               f"culotte/{sz}: front inseam is a straight vertical line")
-        check(close(bp.new_hem_center[0], bp.crotch_out[0]),
+        check(close(bp.I[0], bp.H[0]),
               f"culotte/{sz}: back inseam is a straight vertical line")
 
 

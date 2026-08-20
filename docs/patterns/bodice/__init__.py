@@ -13,7 +13,7 @@ import numpy as np
 from types import SimpleNamespace
 
 import render as _render
-from render import _write_svg, fold_outline, mirror_point
+from render import _write_svg, fold_outline, mirror_point, _curve_groups
 from . import front_bodice, back_bodice, sleeve
 from . import settings
 
@@ -84,6 +84,8 @@ def _bodice_svg_args(bk, fold, seam_allowance, white_fill=False):
         seam_allowance_fn=settings.back_seam_allowance_fn(bk, seam_allowance),
         label_offsets={**settings.INTERIOR_LABEL_OFFSETS,
                        **settings.BACK_LABEL_OFFSETS},
+        curve_seam_segments=_curve_groups(bk.back_bodice),
+        curve_seam_allowance=seam_allowance,
     )
     front_args = dict(
         outline=front_outline,
@@ -96,6 +98,8 @@ def _bodice_svg_args(bk, fold, seam_allowance, white_fill=False):
         seam_allowance=seam_allowance,
         label_offsets={**settings.INTERIOR_LABEL_OFFSETS,
                        **settings.FRONT_LABEL_OFFSETS},
+        curve_seam_segments=_curve_groups(front_outline),
+        curve_seam_allowance=seam_allowance,
     )
     return front_args, back_args
 
@@ -113,7 +117,7 @@ def _sleeve_svg_args(sl, seam_allowance, white_fill=False):
         seam_allowance=seam_allowance,
         label_offsets={**settings.SLEEVE_INTERIOR_OFFSETS,
                        **settings.SLEEVE_LABEL_OFFSETS},
-        curve_seam_segments=sl.cap_segments,
+        curve_seam_segments=[sl.cap_segments],
         curve_seam_allowance=seam_allowance,
         unclipped_construction_lines=sl.unclipped_construction_lines,
         text_annotations=settings.sleeve_text_annotations(sl),

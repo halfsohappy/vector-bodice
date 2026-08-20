@@ -198,7 +198,11 @@ def _segments_src(piece, scal):
     outline_src = "\n        + ".join(parts) if parts else "[]"
     if len(parts) > 1:
         outline_src = f"(\n        {outline_src}\n    )"
-    seam_src = " + ".join(seam_vars) if seam_vars else "[]"
+    # curve_seam_segments is a list of GROUPS (each a list of adjacent
+    # curve segments) — every seam_vars entry is already one group
+    # (a single toggled cubic, or one catmull_rom_chain), so list them
+    # rather than concatenating, which would merge unrelated curves.
+    seam_src = "[" + ", ".join(seam_vars) + "]" if seam_vars else "[]"
     return setup, outline_src, seam_src
 
 

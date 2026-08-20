@@ -80,6 +80,7 @@ def build(waist, skirt_length, hem_allowance):
         outline=outline,
         construction_lines=construction_lines,
         dart_lines=[],
-        # waist arc only — the hem is excluded from the rendered SA overlay
-        curve_seam_segments=[outline[3]],
+        # waist arc only — the hem is excluded from the rendered SA overlay.
+        # One group (list of segments) per curve_seam_segments entry.
+        curve_seam_segments=[[outline[3]]],
     )

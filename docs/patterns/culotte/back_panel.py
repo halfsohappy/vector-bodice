@@ -24,11 +24,11 @@ def build(hip_arc_back, hip_depth_back, skirt_length, n_darts, intake_each,
                        n_darts, intake_each)
 
     crotch_base = base.D + np.array([0.0, -(crotch_depth + CROTCH_EASE)])
-    crotch_top = base.D + np.array(
-        [0.0, -(0.5 * (crotch_depth + CROTCH_EASE) - 0.5)])
-    crotch_out = crotch_base + np.array(
-        [0.5 * hip_arc_back + CROTCH_OUT_EASE, 0.0])
-    new_hem_center = base.F + np.array([crotch_out[0] - base.D[0], 0.0])
+    X = base.D + np.array(
+        [0.0, -(0.5 * (crotch_depth + CROTCH_EASE) - 0.5)])   # crotch-curve tangent point
+    H = crotch_base + np.array(
+        [0.5 * hip_arc_back + CROTCH_OUT_EASE, 0.0])           # crotch extension point
+    I = base.F + np.array([H[0] - base.D[0], 0.0])             # new hem corner, under H
 
     outline = []
     prev = base.D
@@ -40,17 +40,17 @@ def build(hip_arc_back, hip_depth_back, skirt_length, n_darts, intake_each,
     outline.append(("line", prev, base.A))
     _, side_func, _, _ = base.outline[-3]   # A-line side-seam curve (waist to hem)
     outline.append(("cubic_curve", side_func, base.A, base.B))
-    outline.append(("line", base.B, new_hem_center))
-    outline.append(("line", new_hem_center, crotch_out))
+    outline.append(("line", base.B, I))
+    outline.append(("line", I, H))
     outline.append(("cubic_curve",
-                    lambda t: curve_crotch(crotch_top, crotch_out, 1 - t),
-                    crotch_out, crotch_top))
-    outline.append(("line", crotch_top, base.D))
+                    lambda t: curve_crotch(X, H, 1 - t),
+                    H, X))
+    outline.append(("line", X, base.D))
 
     return SimpleNamespace(
         n_darts=base.n_darts, intake_each=intake_each, back_width=base.back_width,
         D=base.D, A=base.A, G=base.G, C=base.C, F=base.F, B=base.B,
-        crotch_top=crotch_top, crotch_out=crotch_out, new_hem_center=new_hem_center,
+        X=X, H=H, I=I,
         dart_points=base.dart_points,
         outline=outline,
         construction_lines=base.construction_lines,

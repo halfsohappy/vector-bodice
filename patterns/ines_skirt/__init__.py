@@ -14,7 +14,7 @@ a single simple rectangle, cut 2.
 CLI: python -m patterns.ines_skirt --help
 """
 
-from render import _write_svg
+from render import _write_svg, rectangle_dims
 from . import skirt_panel, waistband, pocket, tie, pocket_bias
 from . import settings
 
@@ -130,10 +130,13 @@ def _render_all(waist, skirt_length, hem_allowance, seam_allowance, white_fill):
     args = _all_svg_args(pieces, seam_allowance, white_fill)
     out = {}
     for piece_id, kw in args.items():
+        rect = rectangle_dims(kw["outline"], kw.get("seam_allowance", 0), kw.get("seam_allowance_fn"),
+                              kw.get("waist_detect", True), kw.get("merge_consecutive", True))
         svg, w, h = _write_svg(None, kw.pop("outline"), **kw)
         out[piece_id] = svg
         out[f"{piece_id}_w"] = w
         out[f"{piece_id}_h"] = h
+        out[f"{piece_id}_rect"] = rect
     return out
 
 
@@ -158,4 +161,10 @@ def render(waist, skirt_length, hem_allowance=DEFAULT_HEM_ALLOWANCE,
     pieces = build(waist, skirt_length, hem_allowance)
     args = _all_svg_args(pieces, seam_allowance, white_fill=False)
     for piece_id, kw in args.items():
+        rect = rectangle_dims(kw["outline"], kw.get("seam_allowance", 0), kw.get("seam_allowance_fn"),
+                              kw.get("waist_detect", True), kw.get("merge_consecutive", True))
         _write_svg(f"{prefix}_{piece_id}.svg", kw.pop("outline"), **kw)
+        if rect:
+            print(f"  {piece_id} is a plain rectangle — draft with a ruler: "
+                  f"{rect['finished_w']:.2f} x {rect['finished_h']:.2f}in finished, "
+                  f"{rect['cut_w']:.2f} x {rect['cut_h']:.2f}in cut")

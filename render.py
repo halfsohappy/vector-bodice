@@ -192,24 +192,130 @@ def _seam_runs_no_waist(segments, seam_allowance, seam_allowance_fn, waist_detec
     return result
 
 
+def rectangle_dims(outline, seam_allowance, seam_allowance_fn=None,
+                    waist_detect=True, merge_consecutive=True):
+    """If outline is a plain 4-sided rectangle (no darts/curves — e.g. a
+    waistband or a bias-strip notion), return its finished and cut
+    dimensions in inches, so it can be drafted directly with a ruler
+    instead of printing a full pattern.  Returns None if the outline isn't
+    a plain rectangle.
+
+    waist_detect/merge_consecutive should match whatever the piece's own
+    render call uses, so a piece that (correctly) opts out of the
+    bottom-edge SA heuristic gets consistent numbers here too.
+
+    Returns {"finished_w", "finished_h", "cut_w", "cut_h"} (inches).
+    """
+    if len(outline) != 4 or any(seg[0] != "line" for seg in outline):
+        return None
+    for i, seg in enumerate(outline):
+        nxt = outline[(i + 1) % 4]
+        if not np.allclose(seg[2], nxt[1], atol=1e-6):
+            return None   # not a closed 4-edge loop
+
+    edges = [np.asarray(seg[2], float) - np.asarray(seg[1], float) for seg in outline]
+    lens = [float(np.linalg.norm(e)) for e in edges]
+    if any(l < 1e-6 for l in lens):
+        return None
+    if abs(lens[0] - lens[2]) > 1e-4 or abs(lens[1] - lens[3]) > 1e-4:
+        return None   # opposite sides must be equal length
+    for i in range(4):
+        u, v = edges[i] / lens[i], edges[(i + 1) % 4] / lens[(i + 1) % 4]
+        if abs(float(np.dot(u, v))) > 1e-3:
+            return None   # consecutive sides must be perpendicular
+
+    finished_w, finished_h = lens[0], lens[1]
+
+    sa_runs = _seam_runs_no_waist(outline, seam_allowance, seam_allowance_fn,
+                                   waist_detect=waist_detect, merge_consecutive=False)
+
+    def edge_sa(i):
+        p0, p1 = np.asarray(outline[i][1], float), np.asarray(outline[i][2], float)
+        for run, sa in sa_runs:
+            if len(run) == 2 and (
+                (np.allclose(run[0], p0, atol=1e-6) and np.allclose(run[1], p1, atol=1e-6)) or
+                (np.allclose(run[0], p1, atol=1e-6) and np.allclose(run[1], p0, atol=1e-6))):
+                return sa
+        return 0.0
+
+    sa = [edge_sa(i) for i in range(4)]
+    # edges 1 and 3 run perpendicular to the width edge (0), so their SA
+    # extends the piece's width; edges 0 and 2 extend its height.
+    cut_w = finished_w + sa[1] + sa[3]
+    cut_h = finished_h + sa[0] + sa[2]
+
+    return dict(finished_w=finished_w, finished_h=finished_h, cut_w=cut_w, cut_h=cut_h)
+
+
+def _curve_groups(segments):
+    """Find maximal runs of consecutive quadratic/cubic_curve segments in a
+    closed outline (e.g. two halves of one armhole, or an inseam curve
+    blending straight into a crotch curve).  Mirrors _seam_runs's
+    wraparound-safe traversal, but groups by curve-type instead of
+    line-type.
+
+    Returns a list of groups, each a list of segments in outline order —
+    the shape curve_seam_segments expects (one _offset_curve_samples call
+    per group, so unrelated curves elsewhere in the outline never get
+    treated as one fake continuous chain).  A pattern that wants to exclude
+    a particular curve (e.g. a hem arc) should filter it out of the result
+    itself — this helper has no position-based "is this a hem" heuristic,
+    since curves (unlike flat waist/hem lines) can't be reliably identified
+    that way.
+    """
+    n = len(segments)
+    is_curve = [seg[0] in ("quadratic", "cubic_curve") for seg in segments]
+    if not any(is_curve):
+        return []
+    if all(is_curve):
+        return [list(segments)]
+
+    start = 0
+    for j in range(n):
+        if not is_curve[j]:
+            start = (j + 1) % n
+            break
+
+    groups, current = [], []
+    for step in range(n):
+        idx = (start + step) % n
+        if is_curve[idx]:
+            current.append(segments[idx])
+        else:
+            if current:
+                groups.append(current)
+                current = []
+    if current:
+        groups.append(current)
+    return groups
+
+
 def _offset_curve_samples(segments, distance, centroid, n_per_seg=40):
-    """Outward parallel offset of a chain of cubic_curve segments.
+    """Outward parallel offset of a chain of quadratic/cubic_curve segments.
 
     Samples each curve segment densely, computes the outward-pointing unit
     normal at every sample via central finite differences, then offsets each
     point by *distance* along that normal (like Illustrator's "offset path").
 
     Returns an np.array of offset points suitable for rendering as a polyline.
-    Only processes "cubic_curve" segments; others are skipped.
+    Segments should be geometrically adjacent (each starting where the last
+    ended) — see _curve_groups. Only "quadratic"/"cubic_curve" segments are
+    sampled; others are skipped.
     """
     centroid = np.asarray(centroid, float)
     raw_pts = []
     for seg in segments:
-        if seg[0] != "cubic_curve":
+        if seg[0] == "cubic_curve":
+            _, func, _p0, _p1 = seg
+            ts = np.linspace(0, 1, n_per_seg)
+            pts = np.array([func(t) for t in ts])
+        elif seg[0] == "quadratic":
+            _, p0, cp, p1 = seg
+            ts = np.linspace(0, 1, n_per_seg)[:, None]
+            p0, cp, p1 = np.asarray(p0, float), np.asarray(cp, float), np.asarray(p1, float)
+            pts = (1 - ts)**2 * p0 + 2 * (1 - ts) * ts * cp + ts**2 * p1
+        else:
             continue
-        _, func, _p0, _p1 = seg
-        ts = np.linspace(0, 1, n_per_seg)
-        pts = np.array([func(t) for t in ts])
         first_seg = (len(raw_pts) == 0)
         if first_seg:
             raw_pts.extend(pts)
@@ -580,13 +686,17 @@ def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
                                         merge_consecutive=merge_consecutive):
         seam_offset_runs.append(_offset_open_polyline(run, sa, centroid_temp))
 
-    # Curve-based seam allowance (sleeve cap, etc.)
+    # Curve-based seam allowance (sleeve cap, armhole, crotch curve, etc.)
+    # curve_seam_segments is a list of GROUPS — each group a list of
+    # geometrically-adjacent quadratic/cubic_curve segments (see
+    # _curve_groups) — offset independently so unrelated curves elsewhere
+    # in the outline are never sampled as one fake continuous chain.
     curve_offset_runs = []
     if curve_seam_segments and curve_seam_allowance and curve_seam_allowance > 1e-6:
-        curve_off = _offset_curve_samples(
-            curve_seam_segments, curve_seam_allowance, centroid_temp)
-        if len(curve_off) > 1:
-            curve_offset_runs.append(curve_off)
+        for group in curve_seam_segments:
+            curve_off = _offset_curve_samples(group, curve_seam_allowance, centroid_temp)
+            if len(curve_off) > 1:
+                curve_offset_runs.append(curve_off)
 
     # bounding box: outline + seam offset only.
     # Construction lines span the full grid rectangle and must not inflate the canvas.

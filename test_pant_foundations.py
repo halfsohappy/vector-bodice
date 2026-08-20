@@ -67,9 +67,9 @@ def test_trouser_formulas():
         check(close(fp.front_width, sz["hip_arc_front"] + t_front.HIP_EASE),
               f"trouser/{sz}: front width == front hip arc + ease")
 
-        check(close(-bp.crotch_point[0], 0.5 * bp.back_width),
+        check(close(-bp.I[0], 0.5 * bp.back_width),
               f"trouser/{sz}: back crotch extension == one-half of G-D")
-        check(close(-fp.crotch_point[0], 0.25 * fp.front_width),
+        check(close(-fp.M[0], 0.25 * fp.front_width),
               f"trouser/{sz}: front crotch extension == one-fourth of K-D")
 
         check(bp.n_darts == 2 and close(bp.intake_each, 1.0),
@@ -82,9 +82,9 @@ def test_trouser_formulas():
             check(leg_in[0] > bp.N[0] and leg_out[0] < bp.O[0],
                   f"trouser/{sz}: back darts stay within the N-O ease zone")
 
-        check(close(bp.ankle_outseam[0] - bp.ankle_inseam[0], 2 * t_back.HEM_HALF),
+        check(close(bp.Y[0] - bp.Z[0], 2 * t_back.HEM_HALF),
               f"trouser/{sz}: back hem span == 9in")
-        check(close(fp.ankle_outseam[0] - fp.ankle_inseam[0], 2 * t_front.HEM_HALF),
+        check(close(fp.U[0] - fp.V[0], 2 * t_front.HEM_HALF),
               f"trouser/{sz}: front hem span == 8in")
 
 
@@ -108,11 +108,11 @@ def test_slack_tightening():
               f"slack/{sz}: back waist trimmed by the book's stated amount")
         check(close(tbp.C[0] - sbp.C[0], s_back.HIP_TRIM),
               f"slack/{sz}: back hip drawn in by the book's stated amount")
-        check(close(sbp.crotch_point[0] - tbp.crotch_point[0], s_back.CROTCH_TRIM),
+        check(close(sbp.I[0] - tbp.I[0], s_back.CROTCH_TRIM),
               f"slack/{sz}: back crotch extension shortened by the book's stated amount")
-        check(close(sbp.ankle_outseam[0] - sbp.ankle_inseam[0], 2 * s_back.HEM_HALF),
+        check(close(sbp.Y[0] - sbp.Z[0], 2 * s_back.HEM_HALF),
               f"slack/{sz}: back hem narrowed to 8in")
-        check(close(sfp.ankle_outseam[0] - sfp.ankle_inseam[0], 2 * s_front.HEM_HALF),
+        check(close(sfp.U[0] - sfp.V[0], 2 * s_front.HEM_HALF),
               f"slack/{sz}: front hem narrowed to 7in")
 
 
@@ -127,9 +127,9 @@ def test_jean_fit_and_pitch():
         fp = j_front.build(sz["hip_arc_front"], sz["waist_arc_front"],
                            sz["crotch_depth"], sz["pant_length"])
 
-        check(close(-contour.crotch_point[0], j_back.CROTCH_EXT_FRAC * contour.back_width),
+        check(close(-contour.I[0], j_back.CROTCH_EXT_FRAC * contour.back_width),
               f"jean/{sz}: contour-fit back crotch extension == one-fourth of G-D")
-        check(close((-relaxed.crotch_point[0]) - (-contour.crotch_point[0]), 1.0),
+        check(close((-relaxed.I[0]) - (-contour.I[0]), 1.0),
               f"jean/{sz}: relaxed fit adds exactly 1in to the back crotch extension")
 
         check(contour.pitch > 0, f"jean/{sz}: contour fit needs a positive back pitch")
@@ -139,7 +139,7 @@ def test_jean_fit_and_pitch():
         check(close(contour.H[1], contour.pitch),
               f"jean/{sz}: back waist row lifted by exactly the pitch amount")
 
-        check(close(-fp.crotch_point[0], j_front.CROTCH_EXT_FIXED),
+        check(close(-fp.M[0], j_front.CROTCH_EXT_FIXED),
               f"jean/{sz}: front crotch extension is the fixed 2in")
         check(contour.n_darts == 1 and fp.n_darts == 1,
               f"jean/{sz}: exactly one dart per panel")

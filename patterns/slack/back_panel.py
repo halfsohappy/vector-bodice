@@ -33,14 +33,14 @@ def build(hip_arc, waist_arc, crotch_depth, pant_length):
 
     O = base.O - np.array([WAIST_TRIM, 0.0])
     C = base.C - np.array([HIP_TRIM, 0.0])
-    crotch_point = base.crotch_point + np.array([CROTCH_TRIM, 0.0])
-    V_x = base.D[0] - (0.5 * (base.D[0] - crotch_point[0]) + trouser.GRAINLINE_ADJ)
-    ankle_y = base.ankle_outseam[1]
-    ankle_outseam = np.array([V_x + HEM_HALF, ankle_y])
-    ankle_inseam = np.array([V_x - HEM_HALF, ankle_y])
-    knee_y = base.knee_outseam[1]
-    knee_outseam = on_line(C, ankle_outseam, y=knee_y)
-    knee_inseam = on_line(crotch_point, ankle_inseam, y=knee_y)
+    I = base.I + np.array([CROTCH_TRIM, 0.0])
+    V = np.array([base.D[0] - (0.5 * (base.D[0] - I[0]) + trouser.GRAINLINE_ADJ), base.G[1]])
+    ankle_y = base.Y[1]
+    Y = np.array([V[0] + HEM_HALF, ankle_y])
+    Z = np.array([V[0] - HEM_HALF, ankle_y])
+    knee_y = base.R[1]
+    R = on_line(C, Y, y=knee_y)
+    S = on_line(I, Z, y=knee_y)
 
     outline = [("line", base.H, base.N)]
     prev = base.N
@@ -51,23 +51,18 @@ def build(hip_arc, waist_arc, crotch_depth, pant_length):
         prev = leg_out
     outline.append(("line", prev, O))
     outline.append(("cubic_curve", lambda t: trouser.curve_hip(O, C, t), O, C))
-    outline.append(("line", C, ankle_outseam))
-    outline.append(("line", ankle_outseam, ankle_inseam))
-    outline.append(("cubic_curve",
-                    lambda t: trouser.curve_inseam(ankle_inseam, crotch_point, t),
-                    ankle_inseam, crotch_point))
-    outline.append(("cubic_curve",
-                    lambda t: trouser.curve_crotch(base.crotch_top, crotch_point, 1 - t),
-                    crotch_point, base.crotch_top))
-    outline.append(("line", base.crotch_top, base.H))
+    outline.append(("line", C, Y))
+    outline.append(("line", Y, Z))
+    outline.append(("cubic_curve", lambda t: trouser.curve_inseam(Z, I, t), Z, I))
+    outline.append(("cubic_curve", lambda t: trouser.curve_crotch(base.X, I, 1 - t), I, base.X))
+    outline.append(("line", base.X, base.H))
 
     return SimpleNamespace(
         back_width=base.back_width, hip_depth=base.hip_depth, knee_depth=base.knee_depth,
         H=base.H, N=base.N, O=O, G=base.G, C=C, D=base.D,
-        crotch_top=base.crotch_top, crotch_point=crotch_point,
-        ankle_outseam=ankle_outseam, ankle_inseam=ankle_inseam,
-        knee_outseam=knee_outseam, knee_inseam=knee_inseam,
+        X=base.X, I=I, V=V, Y=Y, Z=Z, R=R, S=S,
         n_darts=len(dart_points), intake_each=trouser.DART_INTAKE, dart_points=dart_points,
+        dart_letters=base.dart_letters[:len(dart_points)],
         outline=outline,
         construction_lines=[(base.G, base.D)],
         dart_lines=[],

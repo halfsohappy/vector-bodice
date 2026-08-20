@@ -9,7 +9,7 @@ imported directly from patterns/trouser rather than duplicated.
 CLI: python -m patterns.jean --help
 """
 
-from render import _write_svg
+from render import _write_svg, _curve_groups, rectangle_dims
 from patterns.trouser import waistband
 from . import front_panel, back_panel
 from . import settings
@@ -30,9 +30,10 @@ def build(waist_arc_front, waist_arc_back, hip_arc_front, hip_arc_back,
 
 # ── Piece assembly helpers ────────────────────────────────────────────────────
 
-def _panel_args(ns, corner_labels, interior_labels, style, seam_allowance, white_fill):
+def _panel_args(ns, corner_labels, interior_labels, style, seam_allowance, white_fill,
+                dart_labels_fn):
     outline_labels = {name: getattr(ns, name) for name in corner_labels}
-    outline_labels.update(settings.dart_outline_labels(ns))
+    outline_labels.update(dart_labels_fn(ns))
     return dict(
         outline=ns.outline,
         construction_lines=ns.construction_lines,
@@ -42,6 +43,8 @@ def _panel_args(ns, corner_labels, interior_labels, style, seam_allowance, white
         outline_labels=outline_labels,
         interior_labels={name: getattr(ns, name) for name in interior_labels},
         seam_allowance=seam_allowance,
+        curve_seam_segments=_curve_groups(ns.outline),
+        curve_seam_allowance=seam_allowance,
     )
 
 
@@ -64,10 +67,10 @@ def _all_svg_args(pieces, seam_allowance, white_fill):
     return {
         "front_panel": _panel_args(pieces["front_panel"], settings.FRONT_CORNER_LABELS,
                                    settings.FRONT_INTERIOR_LABELS, settings.FRONT_STYLE,
-                                   seam_allowance, white_fill),
+                                   seam_allowance, white_fill, settings.front_dart_outline_labels),
         "back_panel": _panel_args(pieces["back_panel"], settings.BACK_CORNER_LABELS,
                                   settings.BACK_INTERIOR_LABELS, settings.BACK_STYLE,
-                                  seam_allowance, white_fill),
+                                  seam_allowance, white_fill, settings.back_dart_outline_labels),
         "waistband": _waistband_args(pieces["waistband"], seam_allowance, white_fill),
     }
 
@@ -86,10 +89,13 @@ def render_web(params):
                          bool(params.get("white_fill", False)))
     out = {}
     for piece_id, kw in args.items():
+        rect = rectangle_dims(kw["outline"], kw.get("seam_allowance", 0), kw.get("seam_allowance_fn"),
+                              kw.get("waist_detect", True), kw.get("merge_consecutive", True))
         svg, w, h = _write_svg(None, kw.pop("outline"), **kw)
         out[piece_id] = svg
         out[f"{piece_id}_w"] = w
         out[f"{piece_id}_h"] = h
+        out[f"{piece_id}_rect"] = rect
     return out
 
 
@@ -103,4 +109,10 @@ def render(waist_arc_front, waist_arc_back, hip_arc_front, hip_arc_back,
                    crotch_depth, pant_length, relaxed_fit=relaxed_fit)
     args = _all_svg_args(pieces, seam_allowance, white_fill=False)
     for piece_id, kw in args.items():
+        rect = rectangle_dims(kw["outline"], kw.get("seam_allowance", 0), kw.get("seam_allowance_fn"),
+                              kw.get("waist_detect", True), kw.get("merge_consecutive", True))
         _write_svg(f"{prefix}_{piece_id}.svg", kw.pop("outline"), **kw)
+        if rect:
+            print(f"  {piece_id} is a plain rectangle — draft with a ruler: "
+                  f"{rect['finished_w']:.2f} x {rect['finished_h']:.2f}in finished, "
+                  f"{rect['cut_w']:.2f} x {rect['cut_h']:.2f}in cut")

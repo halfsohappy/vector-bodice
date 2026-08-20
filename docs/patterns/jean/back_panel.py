@@ -63,18 +63,18 @@ def build(hip_arc, waist_arc, crotch_depth, pant_length, relaxed_fit=False):
     G = np.array([0.0, crotch_y])
     C = np.array([back_width, hip_y])
     D = np.array([back_width, crotch_y])
-    crotch_top = np.array([0.0, 0.5 * crotch_y])   # X: G-X = 1/2 of G-H
+    X = np.array([0.0, 0.5 * crotch_y])   # crotch-curve tangent point: G-X = 1/2 of G-H
 
     ext_amount = CROTCH_EXT_FRAC * back_width + (RELAXED_EXTRA if relaxed_fit else 0.0)
-    crotch_point = np.array([-ext_amount, crotch_y])   # I
+    I = np.array([-ext_amount, crotch_y])   # crotch extension point
 
     # Reference (Trouser-style) back crotch curve at this same hip
     # arc/crotch depth, to measure how much crotch length this jean's
     # shorter extension loses.
     ref_ext = trouser.CROTCH_EXT_FRAC * back_width
     ref_crotch_point = np.array([-ref_ext, crotch_y])
-    ref_length = curve_length(lambda t: curve_crotch(crotch_top, ref_crotch_point, 1 - t))
-    actual_length = curve_length(lambda t: curve_crotch(crotch_top, crotch_point, 1 - t))
+    ref_length = curve_length(lambda t: curve_crotch(X, ref_crotch_point, 1 - t))
+    actual_length = curve_length(lambda t: curve_crotch(X, I, 1 - t))
     pitch = max(0.0, ref_length - actual_length)
 
     waist_y = pitch   # the whole waist row is lifted by the pitch amount
@@ -82,18 +82,19 @@ def build(hip_arc, waist_arc, crotch_depth, pant_length, relaxed_fit=False):
     N = np.array([CENTER_BACK_OFFSET, waist_y])
     O = np.array([CENTER_BACK_OFFSET + waist_arc + WAIST_DART_EASE, waist_y])   # side waist
     dart_cx = 0.5 * (N[0] + O[0])   # N-P = one-half of N-O
-    dart_point = np.array([dart_cx, waist_y - DART_DEPTH])
-    leg_in = np.array([dart_cx - DART_INTAKE / 2, waist_y])
-    leg_out = np.array([dart_cx + DART_INTAKE / 2, waist_y])
-    dart_points = [(leg_in, dart_point, leg_out)]
+    P = np.array([dart_cx, waist_y - DART_DEPTH])
+    # dart legs aren't individually lettered in the book — next free letters
+    J = np.array([dart_cx - DART_INTAKE / 2, waist_y])
+    K = np.array([dart_cx + DART_INTAKE / 2, waist_y])
+    dart_points = [(J, P, K)]
 
-    V = np.array([D[0] - GRAINLINE_MARK, crotch_y])
-    W_x = V[0] - 0.5 * (V[0] - crotch_point[0])
-    ankle_outseam = np.array([W_x + HEM_HALF, ankle_y])
-    ankle_inseam = np.array([W_x - HEM_HALF, ankle_y])
+    V = np.array([D[0] - GRAINLINE_MARK, crotch_y])   # D-V = 3/8" mark
+    W = np.array([V[0] - 0.5 * (V[0] - I[0]), crotch_y])   # V-W = 1/2 of V-I (grainline anchor)
+    Y = np.array([W[0] + HEM_HALF, ankle_y])   # ankle, outseam side
+    Z = np.array([W[0] - HEM_HALF, ankle_y])   # ankle, inseam side
     knee_y = ankle_y + knee_depth
-    knee_outseam = on_line(C, ankle_outseam, y=knee_y)
-    knee_inseam = on_line(crotch_point, ankle_inseam, y=knee_y)
+    R = on_line(C, Y, y=knee_y)   # knee, outseam side
+    S = on_line(I, Z, y=knee_y)   # knee, inseam side
 
     outline = [("line", H, N)]
     prev = N
@@ -104,22 +105,16 @@ def build(hip_arc, waist_arc, crotch_depth, pant_length, relaxed_fit=False):
         prev = leg_out_
     outline.append(("line", prev, O))
     outline.append(("cubic_curve", lambda t: curve_hip(O, C, t), O, C))
-    outline.append(("line", C, ankle_outseam))
-    outline.append(("line", ankle_outseam, ankle_inseam))
-    outline.append(("cubic_curve",
-                    lambda t: curve_inseam(ankle_inseam, crotch_point, t),
-                    ankle_inseam, crotch_point))
-    outline.append(("cubic_curve",
-                    lambda t: curve_crotch(crotch_top, crotch_point, 1 - t),
-                    crotch_point, crotch_top))
-    outline.append(("line", crotch_top, H))
+    outline.append(("line", C, Y))
+    outline.append(("line", Y, Z))
+    outline.append(("cubic_curve", lambda t: curve_inseam(Z, I, t), Z, I))
+    outline.append(("cubic_curve", lambda t: curve_crotch(X, I, 1 - t), I, X))
+    outline.append(("line", X, H))
 
     return SimpleNamespace(
         back_width=back_width, hip_depth=hip_depth, knee_depth=knee_depth, pitch=pitch,
         H=H, N=N, O=O, G=G, C=C, D=D,
-        crotch_top=crotch_top, crotch_point=crotch_point,
-        ankle_outseam=ankle_outseam, ankle_inseam=ankle_inseam,
-        knee_outseam=knee_outseam, knee_inseam=knee_inseam,
+        X=X, I=I, V=V, W=W, Y=Y, Z=Z, R=R, S=S,
         n_darts=1, intake_each=DART_INTAKE, dart_points=dart_points,
         outline=outline,
         construction_lines=[(G, D)],

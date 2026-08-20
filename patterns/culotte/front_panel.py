@@ -48,11 +48,11 @@ def build(hip_arc_front, hip_depth_front, skirt_length, n_darts, intake_each,
                        n_darts, intake_each)
 
     crotch_base = base.H + np.array([0.0, -(crotch_depth + CROTCH_EASE)])
-    crotch_top = base.H + np.array(
-        [0.0, -(0.5 * (crotch_depth + CROTCH_EASE) - 0.5)])
-    crotch_out = crotch_base + np.array(
-        [0.5 * hip_arc_front - CROTCH_OUT_EASE, 0.0])
-    new_hem_center = base.J + np.array([crotch_out[0] - base.H[0], 0.0])
+    X = base.H + np.array(
+        [0.0, -(0.5 * (crotch_depth + CROTCH_EASE) - 0.5)])   # crotch-curve tangent point
+    D = crotch_base + np.array(
+        [0.5 * hip_arc_front - CROTCH_OUT_EASE, 0.0])          # crotch extension point
+    E = base.J + np.array([D[0] - base.H[0], 0.0])             # new hem corner, under D
 
     outline = []
     prev = base.H
@@ -65,17 +65,17 @@ def build(hip_arc_front, hip_depth_front, skirt_length, n_darts, intake_each,
     # reuse the A-line side-seam curve as-is (waist to widened hem)
     _, side_func, _, _ = base.outline[-3]   # the cubic_curve entry, before the 2 hem/inseam lines
     outline.append(("cubic_curve", side_func, base.A, base.B))
-    outline.append(("line", base.B, new_hem_center))
-    outline.append(("line", new_hem_center, crotch_out))
+    outline.append(("line", base.B, E))
+    outline.append(("line", E, D))
     outline.append(("cubic_curve",
-                    lambda t: curve_crotch(crotch_top, crotch_out, 1 - t),
-                    crotch_out, crotch_top))
-    outline.append(("line", crotch_top, base.H))
+                    lambda t: curve_crotch(X, D, 1 - t),
+                    D, X))
+    outline.append(("line", X, base.H))
 
     return SimpleNamespace(
         n_darts=base.n_darts, intake_each=intake_each, front_width=base.front_width,
         H=base.H, A=base.A, I=base.I, C=base.C, J=base.J, B=base.B,
-        crotch_top=crotch_top, crotch_out=crotch_out, new_hem_center=new_hem_center,
+        X=X, D=D, E=E,
         dart_points=base.dart_points,
         outline=outline,
         construction_lines=base.construction_lines,

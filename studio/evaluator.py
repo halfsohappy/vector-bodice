@@ -383,7 +383,10 @@ def render_args(piece_def, piece_result, seam_allowance=0.75, white_fill=False):
         interior_labels={n: points[n] for n in labels.get("interior", []) if n in points},
         seam_allowance=seam_allowance,
         label_offsets=piece_def.get("label_offsets") or None,
-        curve_seam_segments=piece_result["curve_seam_segments"] or None,
+        # curve_seam_segments is a list of GROUPS (each a list of adjacent
+        # curve segments) — the studio flags curve_seam per-segment and
+        # flattens them, so treat that flat list as one group.
+        curve_seam_segments=[piece_result["curve_seam_segments"]] if piece_result["curve_seam_segments"] else None,
         curve_seam_allowance=seam_allowance if piece_result["curve_seam_segments"] else None,
         unclipped_construction_lines=piece_result["unclipped_construction_lines"] or None,
         text_annotations=annotations or None,
