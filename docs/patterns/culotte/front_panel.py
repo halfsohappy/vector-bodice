@@ -27,6 +27,25 @@ from patterns.skirt_aline import front_panel as aline
 CROTCH_EASE = 0.75    # in, book's "crotch depth plus 3/4"
 CROTCH_OUT_EASE = 0.75  # in, book's "less 3/4 inch" on the hip-based crotch width
 
+# Box-Pleated Culotte (book p.585-586)
+BOX_PLEAT_SHIFT = 5.0     # in, "shift pattern 5 inches along the guideline for pleat"
+BOX_PLEAT_TRACE = 2.5     # in, "trace ... and 2 1/2 inches of waistline" (A to B)
+BOX_PLEAT_GUIDE = 5.0     # in, "draw a 5-inch line down from B parallel with CF"
+BOX_PLEAT_FLARE = 1.5     # in, optional extra flare swung out at the CF hem
+
+
+def _shift_cf(ns, dx):
+    """Return a copy of the traced A-line namespace with its centre-front
+    edge slid outward by dx (the box-pleat insertion).  The side seam,
+    hem-at-side and darts are untouched — only the CF column moves."""
+    from types import SimpleNamespace as _NS
+    out = _NS(**vars(ns))
+    shift = np.array([dx, 0.0])
+    out.H = ns.H + shift
+    out.I = ns.I + shift
+    out.J = ns.J + shift
+    return out
+
 
 def curve_crotch(P_start, P_end, t):
     """Cubic Bézier from the crotch-curve top (on the center front line)
@@ -42,8 +61,13 @@ def curve_crotch(P_start, P_end, t):
 
 
 def build(hip_arc_front, hip_depth_front, skirt_length, n_darts, intake_each,
-          crotch_depth):
-    """Compute the culotte front panel.  Returns a SimpleNamespace."""
+          crotch_depth, box_pleat=False, box_pleat_flare=False):
+    """Compute the culotte front panel.  Returns a SimpleNamespace.
+
+    box_pleat adds the book's centre-front box pleat (p.585-586): the
+    pattern is shifted 5in along a guideline, which inserts that much
+    width at the centre front.  The pleat folds that fullness back out
+    before the waistband goes on, so the finished waist is unchanged."""
     base = aline.build(hip_arc_front, hip_depth_front, skirt_length,
                        n_darts, intake_each)
 
@@ -53,6 +77,30 @@ def build(hip_arc_front, hip_depth_front, skirt_length, n_darts, intake_each,
     D = crotch_base + np.array(
         [0.5 * hip_arc_front - CROTCH_OUT_EASE, 0.0])          # crotch extension point
     E = base.J + np.array([D[0] - base.H[0], 0.0])             # new hem corner, under D
+
+    # ── Box pleat (book p.585-586) ────────────────────────────────────────
+    # "Shift pattern 5 inches along the guideline for pleat", then "draw
+    # parallel lines from A and C to hem".  Modelled as a straight
+    # insertion of BOX_PLEAT_SHIFT at the centre front: H/X/D/E and the
+    # crotch side all move outward, the side seam and darts stay put.
+    pleats = []
+    pleat_intake = 0.0
+    if box_pleat:
+        # The insertion moves the centre front AWAY from the side seam, so
+        # the panel gets BOX_PLEAT_SHIFT wider; the pleat folds that back out.
+        shift = np.array([-BOX_PLEAT_SHIFT, 0.0])
+        A_pleat = base.H.copy()                      # book's A: original CF waist
+        base = _shift_cf(base, -BOX_PLEAT_SHIFT)
+        X = X + shift
+        D = D + shift
+        E = E + shift
+        if box_pleat_flare:
+            # "swing the pattern 1 1/2 inches away from the centre front at
+            # the hem and blend the hemline"
+            E = E + np.array([-BOX_PLEAT_FLARE, 0.0])
+        # the two fold lines: the new centre front and the original one
+        pleats.append((base.H.copy(), A_pleat))
+        pleat_intake = BOX_PLEAT_SHIFT
 
     outline = []
     prev = base.H
@@ -72,12 +120,19 @@ def build(hip_arc_front, hip_depth_front, skirt_length, n_darts, intake_each,
                     D, X))
     outline.append(("line", X, base.H))
 
+    finished_waist_span = float(base.A[0] - base.H[0]) - pleat_intake \
+        - sum(float(lo[0] - li[0]) for li, _p, lo in base.dart_points)
+
     return SimpleNamespace(
         n_darts=base.n_darts, intake_each=intake_each, front_width=base.front_width,
+        n_pleats=len(pleats), pleats=pleats, pleat_intake=pleat_intake,
+        finished_waist_span=finished_waist_span,
         H=base.H, A=base.A, I=base.I, C=base.C, J=base.J, B=base.B,
         X=X, D=D, E=E,
         dart_points=base.dart_points,
         outline=outline,
         construction_lines=base.construction_lines,
-        dart_lines=[],
+        dart_lines=[(a, np.array([a[0], a[1] - BOX_PLEAT_GUIDE])) for a, _ in pleats]
+                   + [(b, np.array([b[0], b[1] - BOX_PLEAT_GUIDE])) for _, b in pleats],
+        notches=[a for a, _ in pleats] + [b for _, b in pleats],
     )

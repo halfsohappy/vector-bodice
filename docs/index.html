@@ -352,6 +352,38 @@
       gap: 7px;
       margin: 8px 0 4px;
     }
+    /* choice / number options (see buildPatternOptions) */
+    .opt-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 8px 0 4px 21px;
+    }
+    .opt-row label {
+      font-size: 11px;
+      color: var(--text-medium);
+    }
+    .opt-row select,
+    .opt-row input[type="number"] {
+      flex: 0 0 auto;
+      width: 46%;
+      padding: 5px 7px;
+      font-family: var(--font);
+      font-size: 12px;
+      color: var(--text-dark);
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .opt-row select:focus,
+    .opt-row input[type="number"]:focus {
+      outline: none;
+      border-color: var(--border-focus);
+    }
+    .opt-disabled { opacity: .45; }
+    .opt-disabled select,
+    .opt-disabled input { cursor: not-allowed; }
     .cb-row input[type="checkbox"] {
       width: 14px; height: 14px;
       accent-color: var(--accent);
@@ -830,15 +862,66 @@
       });
     }
 
+    /* Options support three types: "checkbox" (the default, and what every
+       pattern used before design options existed), "choice" (a <select>
+       over opt.choices) and "number".  An option may also declare
+       requires: "<other key>", which dims it while that parent toggle is
+       off — used for sub-settings like flare position. */
     function buildPatternOptions(p) {
       const root = $('patternOptions');
       root.innerHTML = '';
-      for (const opt of p.options || []) {
-        const cb = el('input', { type: 'checkbox', id: 'inp-' + opt.key });
-        cb.checked = !!opt.default;
-        const label = el('label', { for: 'inp-' + opt.key, text: opt.label });
-        root.appendChild(el('div', { class: 'cb-row' }, [cb, label]));
+      const opts = p.options || [];
+
+      for (const opt of opts) {
+        const id = 'inp-' + opt.key;
+        const type = opt.type || 'checkbox';
+        let row;
+
+        if (type === 'checkbox') {
+          const cb = el('input', { type: 'checkbox', id });
+          cb.checked = !!opt.default;
+          row = el('div', { class: 'cb-row' },
+                   [cb, el('label', { for: id, text: opt.label })]);
+        } else if (type === 'choice') {
+          const sel = el('select', { id, class: 'opt-select' });
+          for (const c of opt.choices || []) {
+            const o = el('option', { value: c.value, text: c.label });
+            if (c.value === opt.default) o.selected = true;
+            sel.appendChild(o);
+          }
+          row = el('div', { class: 'opt-row' },
+                   [el('label', { for: id, text: opt.label }), sel]);
+        } else {
+          const inp = el('input', {
+            type: 'number', id, step: opt.step ?? 0.125,
+            min: opt.min, max: opt.max, inputmode: 'decimal',
+          });
+          inp.value = opt.default ?? '';
+          row = el('div', { class: 'opt-row' },
+                   [el('label', { for: id, text: opt.label }), inp]);
+        }
+
+        if (opt.requires) row.dataset.requires = opt.requires;
+        root.appendChild(row);
       }
+
+      // Wire parent toggles so dependent rows dim when the parent is off.
+      const sync = () => {
+        for (const row of root.children) {
+          const req = row.dataset.requires;
+          if (!req) continue;
+          const parent = $('inp-' + req);
+          const on = parent ? parent.checked : true;
+          row.classList.toggle('opt-disabled', !on);
+          row.querySelectorAll('input,select').forEach(f => { f.disabled = !on; });
+        }
+      };
+      for (const opt of opts) {
+        if ((opt.type || 'checkbox') !== 'checkbox') continue;
+        const cb = $('inp-' + opt.key);
+        if (cb) cb.addEventListener('change', sync);
+      }
+      sync();
     }
 
     function buildPieceViews(p) {
@@ -999,8 +1082,20 @@ for _pattern_id in ${JSON.stringify(Object.keys(PATTERNS))}:
         if (bad.length) { errors.push(`Invalid value for ${bad.join(', ')}`); continue; }
         Object.assign(params, vals);
       }
-      for (const opt of p.options || [])
-        params[opt.key] = $('inp-' + opt.key).checked;
+      for (const opt of p.options || []) {
+        const field = $('inp-' + opt.key);
+        if (!field) continue;
+        const type = opt.type || 'checkbox';
+        if (type === 'checkbox') {
+          params[opt.key] = field.checked;
+        } else if (type === 'choice') {
+          params[opt.key] = field.value;
+        } else {
+          const v = parseFloat(field.value);
+          if (isNaN(v)) errors.push(`Invalid value for ${opt.label.toLowerCase()}`);
+          else params[opt.key] = v;
+        }
+      }
       const sa = parseFloat($('inp-seam').value || '0');
       if (isNaN(sa) || sa < 0) errors.push('Invalid value for seam allowance');
       else params.seam_allowance = sa;

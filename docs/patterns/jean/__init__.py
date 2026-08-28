@@ -10,7 +10,7 @@ CLI: python -m patterns.jean --help
 """
 
 from render import _write_svg, _curve_groups, rectangle_dims
-from patterns.trouser import waistband
+from patterns.trouser import waistband, fly, belt_loops, pocket, legline
 from . import front_panel, back_panel
 from . import settings
 
@@ -18,14 +18,26 @@ from . import settings
 # ── Build ─────────────────────────────────────────────────────────────────────
 
 def build(waist_arc_front, waist_arc_back, hip_arc_front, hip_arc_back,
-          crotch_depth, pant_length, relaxed_fit=False):
+          crotch_depth, pant_length, relaxed_fit=False,
+          fly_front=False, belt_loops_opt=False, pockets=False,
+          flared_leg=False, flare_position="at_knee"):
     """Draft every piece of the jean.  Returns {piece_id: SimpleNamespace}."""
-    front = front_panel.build(hip_arc_front, waist_arc_front, crotch_depth, pant_length)
     back = back_panel.build(hip_arc_back, waist_arc_back, crotch_depth, pant_length,
-                            relaxed_fit=relaxed_fit)
-    waist_total = 2 * (waist_arc_front + waist_arc_back)
-    band = waistband.build(waist_total)
-    return {"front_panel": front, "back_panel": back, "waistband": band}
+                            relaxed_fit=relaxed_fit,
+                            flared_leg=flared_leg, flare_position=flare_position)
+    front = front_panel.build(hip_arc_front, waist_arc_front, crotch_depth, pant_length,
+                              flared_leg=flared_leg, flare_position=flare_position,
+                              back_crotch_width=back.crotch_width)
+    band = waistband.build(front.finished_waist, back.finished_waist)
+    pieces = {"front_panel": front, "back_panel": back, "waistband": band}
+    if fly_front:
+        pieces["fly"] = fly.build_fly()
+        pieces["shield"] = fly.build_shield()
+    if belt_loops_opt:
+        pieces["belt_loops"] = belt_loops.build()
+    if pockets:
+        pieces.update(pocket.build(front))
+    return pieces
 
 
 # ── Piece assembly helpers ────────────────────────────────────────────────────
@@ -45,6 +57,7 @@ def _panel_args(ns, corner_labels, interior_labels, style, seam_allowance, white
         seam_allowance=seam_allowance,
         curve_seam_segments=_curve_groups(ns.outline),
         curve_seam_allowance=seam_allowance,
+        notches=getattr(ns, "notches", None),
     )
 
 
@@ -60,11 +73,56 @@ def _waistband_args(ns, seam_allowance, white_fill):
         seam_allowance=seam_allowance,
         waist_detect=False,
         merge_consecutive=False,
+        notches=getattr(ns, "notches", None),
     )
 
 
+def _notion_args(ns, style, seam_allowance, white_fill):
+    """Render args for a plain rectangular notion (fly, shield, belt loops)."""
+    return dict(
+        outline=ns.outline,
+        construction_lines=ns.construction_lines,
+        dart_lines=ns.dart_lines,
+        fill="white" if white_fill else style["fill"],
+        stroke=style["stroke"],
+        outline_labels={n: getattr(ns, n) for n in ("A", "B", "C", "D")},
+        interior_labels={},
+        seam_allowance=seam_allowance,
+        waist_detect=False,
+        merge_consecutive=False,
+        notches=getattr(ns, "notches", None),
+    )
+
+
+def _addon_args(pieces, args, seam_allowance, white_fill):
+    """Attach render args for whichever optional pieces are present."""
+    for pid in ("pocket_facing", "pocket_pouch", "pocket_backing", "pocket_lining"):
+        if pid in pieces:
+            ns = pieces[pid]
+            args[pid] = dict(
+                outline=ns.outline,
+                construction_lines=ns.construction_lines,
+                dart_lines=ns.dart_lines,
+                fill="white" if white_fill else settings.POCKET_STYLE["fill"],
+                stroke=settings.POCKET_STYLE["stroke"],
+                outline_labels={n: getattr(ns, n) for n in ("A","B","C","D","E","F","G","X")
+                                if hasattr(ns, n)},
+                interior_labels={},
+                seam_allowance=seam_allowance,
+                seam_allowance_fn=pocket.entry_seam_allowance_fn(ns, seam_allowance),
+                waist_detect=False,
+                merge_consecutive=False,
+            )
+    for pid, style in (("fly", settings.FLY_STYLE),
+                       ("shield", settings.SHIELD_STYLE),
+                       ("belt_loops", settings.BELT_LOOP_STYLE)):
+        if pid in pieces:
+            args[pid] = _notion_args(pieces[pid], style, seam_allowance, white_fill)
+    return args
+
+
 def _all_svg_args(pieces, seam_allowance, white_fill):
-    return {
+    args = {
         "front_panel": _panel_args(pieces["front_panel"], settings.FRONT_CORNER_LABELS,
                                    settings.FRONT_INTERIOR_LABELS, settings.FRONT_STYLE,
                                    seam_allowance, white_fill, settings.front_dart_outline_labels),
@@ -73,6 +131,7 @@ def _all_svg_args(pieces, seam_allowance, white_fill):
                                   seam_allowance, white_fill, settings.back_dart_outline_labels),
         "waistband": _waistband_args(pieces["waistband"], seam_allowance, white_fill),
     }
+    return _addon_args(pieces, args, seam_allowance, white_fill)
 
 
 # ── Render: SVG strings (web interface) ───────────────────────────────────────
@@ -83,6 +142,11 @@ def render_web(params):
         float(params["waist_arc_front"]), float(params["waist_arc_back"]),
         float(params["hip_arc_front"]), float(params["hip_arc_back"]),
         float(params["crotch_depth"]), float(params["pant_length"]),
+        fly_front=bool(params.get("fly_front", False)),
+        belt_loops_opt=bool(params.get("belt_loops", False)),
+        pockets=bool(params.get("pockets", False)),
+        flared_leg=bool(params.get("flared_leg", False)),
+        flare_position=str(params.get("flare_position", "at_knee")),
         relaxed_fit=bool(params.get("relaxed_fit", False)),
     )
     args = _all_svg_args(pieces, float(params.get("seam_allowance", 0.75)),
@@ -103,10 +167,14 @@ def render_web(params):
 
 def render(waist_arc_front, waist_arc_back, hip_arc_front, hip_arc_back,
            crotch_depth, pant_length, prefix="jean", seam_allowance=0.75,
-           relaxed_fit=False):
+           relaxed_fit=False,
+           fly_front=False, belt_loops=False, pockets=False,
+           flared_leg=False, flare_position="at_knee"):
     """Render every piece of the jean to <prefix>_<piece>.svg files."""
     pieces = build(waist_arc_front, waist_arc_back, hip_arc_front, hip_arc_back,
-                   crotch_depth, pant_length, relaxed_fit=relaxed_fit)
+                   crotch_depth, pant_length, relaxed_fit=relaxed_fit,
+                   fly_front=fly_front, belt_loops_opt=belt_loops, pockets=pockets,
+                   flared_leg=flared_leg, flare_position=flare_position)
     args = _all_svg_args(pieces, seam_allowance, white_fill=False)
     for piece_id, kw in args.items():
         rect = rectangle_dims(kw["outline"], kw.get("seam_allowance", 0), kw.get("seam_allowance_fn"),

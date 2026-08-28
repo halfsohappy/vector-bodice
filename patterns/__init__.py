@@ -17,3 +17,31 @@ Each subfolder is one pattern.  A pattern folder contains:
 To add a new pattern, copy this folder shape and give the new pieces
 build() functions that return outlines in the segment format above.
 """
+
+
+# ── manifest option helpers (shared by every pattern's __main__.py) ───────────
+# Options come in three types, matching what the web frontend renders:
+#   "checkbox" (the default) → store_true flag
+#   "choice"                 → --key VALUE, restricted to the listed choices
+#   "number"                 → --key FLOAT
+# Keeping this here means a pattern's CLI picks up new option types for free.
+
+def add_option_args(parser, options):
+    """Add one argparse flag per manifest option."""
+    for o in options:
+        key, otype = o["key"], o.get("type", "checkbox")
+        helptext = o["label"].lower()
+        if otype == "checkbox":
+            parser.add_argument(f"--{key}", action="store_true", help=helptext)
+        elif otype == "choice":
+            parser.add_argument(f"--{key}", type=str, default=o.get("default"),
+                                choices=[c["value"] for c in o.get("choices", [])],
+                                help=helptext)
+        else:
+            parser.add_argument(f"--{key}", type=float, default=o.get("default"),
+                                help=helptext)
+
+
+def collect_options(args, options):
+    """Read the parsed option values back out as a {key: value} dict."""
+    return {o["key"]: getattr(args, o["key"]) for o in options}

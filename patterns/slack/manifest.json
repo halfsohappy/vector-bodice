@@ -3,15 +3,22 @@
   "name": "slack",
   "source": "adapted from Pattern Making for Fashion Design, 5th ed. (Helen Joseph-Armstrong), \"Slack — Foundation 3,\" p.577, built on the trouser foundation",
   "notes": [
-    "Dart placement is estimated by spacing the remaining dart evenly across the waist ease-zone, inherited from the trouser foundation this is built on.",
-    "The waistline is drafted as a straight line through the dart leg rather than a curve, and the hip curve/outseam/inseam legs are smooth mathematical approximations — same as the trouser foundation this is built on.",
-    "The book gives this foundation's fit adjustment as a traced-and-eyeballed illustration with approximate inches, not a numbered formula list. The waist/hip/crotch trims and narrower hem are a direct transcription of the figure's labelled inches, applied at the trouser draft's own points — not a literal reproduction of hand-eyeballing a traced copy.",
-    "The hem edge is left as the finished cut line — add your own hem allowance separately when cutting. The seam-allowance preview line isn't drawn along the curved edges (hip curve, crotch curve, inseam), same as the trouser foundation."
+      "Dart placement is estimated by spacing the remaining dart evenly across the waist ease-zone, inherited from the trouser foundation this is built on.",
+      "The waistline is drafted as a straight line through the dart leg rather than a curve, and the hip curve/outseam/inseam legs are smooth mathematical approximations — same as the trouser foundation this is built on.",
+      "The book gives this foundation's fit adjustment as a traced-and-eyeballed illustration with approximate inches, not a numbered formula list. The waist/hip/crotch trims and narrower hem are a direct transcription of the figure's labelled inches, applied at the trouser draft's own points — not a literal reproduction of hand-eyeballing a traced copy.",
+      "The hem edge is left as the finished cut line — add your own hem allowance separately when cutting.",
+      "Seam allowance is drawn on every seam, curved edges included. Notches mark the hip on the outseam and the knee on both outseam and inseam; the waistband is notched at both side seams and centre back.",
+      "Dropping the side-most dart returns its intake to the waist, so the same amount is trimmed back off at both ends of the waistline (centre back and side) — keeping the slack's finished waist equal to the trouser's, with the closer fit coming from the leg and crotch instead.",
+      "The fly, shield and belt-loop strip are drafted at the book's stated sizes for a standard 7in pant zipper (fly 1 1/2 x 7 1/2in, shield 2 1/2 x 8 1/2in, loop strip 3/4 x 13 1/2in for six loops).",
+      "The flared leg widens the hem to the back crotch-level width (front 1/2in narrower), flaring from above, at, or below the knee as chosen. The book's separate 1in length addition is included, and the hemline is drawn straight between the two ankle points rather than squared to the flared legline.",
+      "The pocket's lining shape comes from closing the waist darts and pivoting on a hinge in the book; here that pivot is a closed-form approximation, the same technique used for the A-line skirt's dart transfer. Figure 4a's 12in and 4in are read as the bag's depth below the waist and how far its inner edge sits beyond the entry.",
+      "The contour back with creaseline flare replaces the back creaseline with a seam, so the back is cut as two pieces. The waist dart is absorbed into that seam and both halves get the same mirrored buttocks contour, so the two edges still sew together. The contour and hemline curves are smooth approximations of the book's hand-drawn shaping."
   ],
   "files": [
     "__init__.py",
     "front_panel.py",
     "back_panel.py",
+    "creaseline.py",
     "settings.py"
   ],
   "measurementGroups": [
@@ -29,11 +36,33 @@
       ]
     }
   ],
-  "options": [],
+  "options": [
+    { "key": "creaseline_flare", "label": "Contour back with creaseline flare", "default": false },
+    { "key": "flared_leg",    "label": "Flared leg", "default": false },
+    { "key": "flare_position", "label": "Flare starts", "type": "choice", "default": "at_knee",
+      "choices": [
+        { "value": "above_knee", "label": "above knee" },
+        { "value": "at_knee",    "label": "at knee" },
+        { "value": "below_knee", "label": "below knee" }
+      ],
+      "requires": "flared_leg" },
+    { "key": "pockets",    "label": "Slash pockets",       "default": false },
+    { "key": "fly_front",  "label": "Fly & shield closure", "default": false },
+    { "key": "belt_loops", "label": "Belt loops",           "default": false }
+  ],
   "pieces": [
-    { "id": "front_panel", "label": "Front" },
-    { "id": "back_panel",  "label": "Back" },
-    { "id": "waistband",   "label": "Waistband" }
+    { "id": "front_panel",  "label": "Front" },
+    { "id": "back_panel",   "label": "Back" },
+    { "id": "back_side",    "label": "Back \u2014 Side Half" },
+    { "id": "back_inner",   "label": "Back \u2014 Inner Half" },
+    { "id": "waistband",    "label": "Waistband" },
+    { "id": "fly",          "label": "Fly" },
+    { "id": "shield",       "label": "Shield" },
+    { "id": "belt_loops",   "label": "Belt Loops" },
+    { "id": "pocket_facing",  "label": "Pocket Facing" },
+    { "id": "pocket_pouch",   "label": "Pocket Pouch" },
+    { "id": "pocket_backing", "label": "Pocket Backing" },
+    { "id": "pocket_lining",  "label": "Pocket Lining" }
   ],
   "testSizes": [
     { "label": "S",  "values": { "waist_arc_front": 6.5, "waist_arc_back": 6.5, "hip_arc_front": 8.75, "hip_arc_back": 8.75, "crotch_depth": 10.0, "pant_length": 38 } },

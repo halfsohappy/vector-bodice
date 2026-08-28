@@ -24,11 +24,13 @@ import numpy as np
 from types import SimpleNamespace
 
 from geometry import cubic_bezier, on_line
+from . import legline
 
 CROTCH_EASE = 0.75          # in, "crotch depth plus 3/4-inch ease"
 HIP_EASE = 0.25             # in, "back hip plus 1/4 inch (ease)"
 KNEE_EASE = 1.0             # in, "one-half of B-D plus 1 inch"
-CENTER_BACK_OFFSET = 0.75   # in, H-N
+CENTER_BACK_OFFSET = 0.75   # in, H-N (centre back pitched in by this much)
+CB_PITCH_UP = 0.25          # in, N-S squared up (book Fig 4)
 WAIST_DART_EASE = 2.25      # in, N-O = waist arc plus 2 1/4"
 DART_COUNT = 2
 DART_INTAKE = 1.0           # in, each
@@ -72,7 +74,8 @@ def curve_crotch(P_start, P_end, t):
     return cubic_bezier(P_start, C1, C2, P_end, t)
 
 
-def build(hip_arc, waist_arc, crotch_depth, pant_length):
+def build(hip_arc, waist_arc, crotch_depth, pant_length,
+          flared_leg=False, flare_position="at_knee"):
     """Compute the back panel's points and outline.  Returns a
     SimpleNamespace."""
     full_crotch_depth = crotch_depth + CROTCH_EASE
@@ -95,8 +98,18 @@ def build(hip_arc, waist_arc, crotch_depth, pant_length):
     X = np.array([0.0, waist_y + 0.5 * (crotch_y - waist_y)])   # crotch-curve tangent point
     I = np.array([-CROTCH_EXT_FRAC * back_width, crotch_y])      # crotch extension point
 
-    N = np.array([CENTER_BACK_OFFSET, waist_y])
+    N = np.array([CENTER_BACK_OFFSET, waist_y])                  # H-N mark (construction only)
+    # S is the pitched centre-back waist point (book Fig 4: "N-S = 1/4 inch
+    # squared up from N.  Draw line from S to X").  The waistline runs S->O
+    # and the centre back runs S->X — the H-N-S corner is construction only
+    # and is NOT part of the finished piece, which is what keeps the back
+    # waist at (waist arc + ease) rather than that plus the H-N offset.
+    S = N + np.array([0.0, CB_PITCH_UP])
     O = np.array([CENTER_BACK_OFFSET + waist_arc + WAIST_DART_EASE, waist_y])   # side waist
+
+    def waist_at(x):
+        """y on the (slightly sloping) S->O waistline at the given x."""
+        return float(on_line(S, O, x=x)[1])
 
     # Dart legs/points aren't individually lettered in the book (p.574) —
     # continuing the alphabet from where this panel's own lettering leaves
@@ -104,41 +117,64 @@ def build(hip_arc, waist_arc, crotch_depth, pant_length):
     _dart_letters = [("J", "K", "L"), ("M", "P", "Q")]
     dart_points = []
     for i in range(DART_COUNT):
-        cx = N[0] + (O[0] - N[0]) * (i + 1) / (DART_COUNT + 1)
-        leg_in = np.array([cx - DART_INTAKE / 2, waist_y])
-        leg_out = np.array([cx + DART_INTAKE / 2, waist_y])
-        point = np.array([cx, waist_y - DART_DEPTH])
+        cx = S[0] + (O[0] - S[0]) * (i + 1) / (DART_COUNT + 1)
+        leg_in = np.array([cx - DART_INTAKE / 2, waist_at(cx - DART_INTAKE / 2)])
+        leg_out = np.array([cx + DART_INTAKE / 2, waist_at(cx + DART_INTAKE / 2)])
+        point = np.array([cx, waist_at(cx) - DART_DEPTH])
         dart_points.append((leg_in, point, leg_out))
 
     V = np.array([D[0] - (0.5 * (D[0] - I[0]) + GRAINLINE_ADJ), crotch_y])   # grainline anchor
-    Y = np.array([V[0] + HEM_HALF, ankle_y])   # ankle, outseam side
-    Z = np.array([V[0] - HEM_HALF, ankle_y])   # ankle, inseam side
     knee_y = ankle_y + knee_depth
-    R = on_line(C, Y, y=knee_y)   # knee, outseam side
-    S = on_line(I, Z, y=knee_y)   # knee, inseam side
+    crotch_width = float(D[0] - I[0])   # the book's "back crotch level"
 
-    outline = [("line", H, N)]
-    prev = N
-    for i, (leg_in, point, leg_out) in enumerate(dart_points):
+    leg = None
+    if flared_leg:
+        leg = legline.build(C, I, V[0], HEM_HALF, ankle_y, knee_y,
+                            flare_half=crotch_width / 2.0,
+                            flare_position=flare_position)
+        Y, Z, YY, ZZ = leg.ankle_out, leg.ankle_in, leg.knee_out, leg.knee_in
+    else:
+        Y = np.array([V[0] + HEM_HALF, ankle_y])   # ankle, outseam side
+        Z = np.array([V[0] - HEM_HALF, ankle_y])   # ankle, inseam side
+        YY = on_line(C, Y, y=knee_y)   # knee, outseam side
+        ZZ = on_line(I, Z, y=knee_y)   # knee, inseam side
+
+    outline = []
+    finished_waist = 0.0
+    prev = S
+    for leg_in, point, leg_out in dart_points:
         outline.append(("line", prev, leg_in))
+        finished_waist += float(np.linalg.norm(leg_in - prev))
         outline.append(("dart", leg_in, point))
         outline.append(("dart", point, leg_out))
         prev = leg_out
     outline.append(("line", prev, O))
+    finished_waist += float(np.linalg.norm(O - prev))
     outline.append(("cubic_curve", lambda t: curve_hip(O, C, t), O, C))
-    outline.append(("line", C, Y))
-    outline.append(("line", Y, Z))
-    outline.append(("cubic_curve", lambda t: curve_inseam(Z, I, t), Z, I))
+    if leg is not None:
+        # outseam kinks outward where the flare begins, then runs to the hem
+        outline.append(("line", C, leg.flare_out))
+        outline.append(("line", leg.flare_out, Y))
+        outline.append(("line", Y, Z))
+        outline.append(("line", Z, leg.flare_in))
+        outline.append(("cubic_curve", lambda t: curve_inseam(leg.flare_in, I, t),
+                        leg.flare_in, I))
+    else:
+        outline.append(("line", C, Y))
+        outline.append(("line", Y, Z))
+        outline.append(("cubic_curve", lambda t: curve_inseam(Z, I, t), Z, I))
     outline.append(("cubic_curve", lambda t: curve_crotch(X, I, 1 - t), I, X))
-    outline.append(("line", X, H))
+    outline.append(("line", X, S))
 
     return SimpleNamespace(
         back_width=back_width, hip_depth=hip_depth, knee_depth=knee_depth,
-        H=H, N=N, O=O, G=G, C=C, D=D,
-        X=X, I=I, V=V, Y=Y, Z=Z, R=R, S=S,
+        finished_waist=finished_waist, crotch_width=crotch_width,
+        H=H, N=N, S=S, O=O, G=G, C=C, D=D,
+        X=X, I=I, V=V, Y=Y, Z=Z, YY=YY, ZZ=ZZ,
         n_darts=DART_COUNT, intake_each=DART_INTAKE, dart_points=dart_points,
         dart_letters=_dart_letters[:DART_COUNT],
         outline=outline,
-        construction_lines=[(G, D)],
+        construction_lines=[(G, D), (H, N)],
         dart_lines=[],
+        notches=[C, YY, ZZ],   # hip on outseam, knee on outseam and inseam
     )

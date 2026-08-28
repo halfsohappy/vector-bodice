@@ -11,14 +11,18 @@ from types import SimpleNamespace
 
 from geometry import cubic_bezier, on_line
 from .back_panel import curve_crotch
+from . import legline
 
 CROTCH_EASE = 0.75          # in, "crotch depth plus 3/4-inch ease"
 HIP_EASE = 0.25             # in, "front hip plus 1/4 inch (ease)"
 KNEE_EASE = 1.0             # in, "one-half of B-D plus 1 inch"
 WAIST_DART_EASE = 1.25      # in, L-Q = waist arc plus 1 1/4"
+CF_DROP = 0.25              # in, waistline starts 1/4" below L (book Fig 5)
 DART_COUNT = 2
 DART_INTAKE = 0.5           # in, each
 DART_DEPTH = 3.0            # in, "square down 3 inches"
+PLEAT_SPACING = 1.5         # in, second pleat sits this far from the first (p.588)
+PLEAT_FOLD_DEPTH = 7.5      # in, how far the pleat fold is marked down (p.588 Fig 2a)
 CROTCH_EXT_FRAC = 0.25      # K-M = one-fourth of K-D
 GRAINLINE_ADJ = 0.25        # in, D-W = one-half of D-M, plus 1/4"
 HEM_HALF = 4.0              # in, half the front leg opening
@@ -44,7 +48,9 @@ def curve_inseam(ankle_inseam, crotch_point, t):
     return cubic_bezier(ankle_inseam, C1, C2, crotch_point, t)
 
 
-def build(hip_arc, waist_arc, crotch_depth, pant_length):
+def build(hip_arc, waist_arc, crotch_depth, pant_length,
+          flared_leg=False, flare_position="at_knee", back_crotch_width=None,
+          pleated_front=False, pleat_depth=2.0):
     """Compute the front panel's points and outline.  Returns a
     SimpleNamespace."""
     full_crotch_depth = crotch_depth + CROTCH_EASE
@@ -68,6 +74,15 @@ def build(hip_arc, waist_arc, crotch_depth, pant_length):
     M = np.array([-CROTCH_EXT_FRAC * front_width, crotch_y])      # crotch extension point
 
     Q = np.array([waist_arc + WAIST_DART_EASE, waist_y])   # side waist
+    # The front centre front is not pitched in (unlike the back), but the
+    # book's Fig 5 starts the waistline "1/4 inch below L" — LL is that
+    # lowered centre-front waist point.  Width is unaffected, so the front
+    # waist is already (waist arc + ease) once the darts fold out.
+    LL = L + np.array([0.0, -CF_DROP])
+
+    def waist_at(x):
+        """y on the (slightly sloping) LL->Q waistline at the given x."""
+        return float(on_line(LL, Q, x=x)[1])
 
     # Dart legs/points aren't individually lettered in the book (p.574) —
     # continuing the alphabet from where this panel's own lettering leaves
@@ -75,41 +90,113 @@ def build(hip_arc, waist_arc, crotch_depth, pant_length):
     _dart_letters = [("N", "O", "P"), ("R", "S", "T")]
     dart_points = []
     for i in range(DART_COUNT):
-        cx = L[0] + (Q[0] - L[0]) * (i + 1) / (DART_COUNT + 1)
-        leg_in = np.array([cx - DART_INTAKE / 2, waist_y])
-        leg_out = np.array([cx + DART_INTAKE / 2, waist_y])
-        point = np.array([cx, waist_y - DART_DEPTH])
+        cx = LL[0] + (Q[0] - LL[0]) * (i + 1) / (DART_COUNT + 1)
+        leg_in = np.array([cx - DART_INTAKE / 2, waist_at(cx - DART_INTAKE / 2)])
+        leg_out = np.array([cx + DART_INTAKE / 2, waist_at(cx + DART_INTAKE / 2)])
+        point = np.array([cx, waist_at(cx) - DART_DEPTH])
         dart_points.append((leg_in, point, leg_out))
 
     W = np.array([D[0] - (0.5 * (D[0] - M[0]) + GRAINLINE_ADJ), crotch_y])   # grainline anchor
-    U = np.array([W[0] + HEM_HALF, ankle_y])   # ankle, outseam side
-    V = np.array([W[0] - HEM_HALF, ankle_y])   # ankle, inseam side
     knee_y = ankle_y + knee_depth
-    Y = on_line(C, U, y=knee_y)   # knee, outseam side
-    Z = on_line(M, V, y=knee_y)   # knee, inseam side
+
+    # ── Two-pleat front (book p.588 Fig 2a) ───────────────────────────────
+    # "Cut on creaseline from waist to hem", then "First pleat: spread 2
+    # inches" and "Second pleat: combines both waist darts, spaced 1 1/2
+    # inches from the first pleat".
+    #
+    # The slash-and-spread is modelled as a shear: everything on the centre-
+    # front side of the creaseline moves away from it by the spread amount
+    # at the waist, tapering to nothing at the hem (the book's own pivot).
+    # The fullness folds out again as the pleat, so the finished waist — and
+    # therefore the waistband — is unchanged.
+    pleats = []
+    pleat_intake = 0.0
+    if pleated_front:
+        crease_x = float(W[0])
+        # Taper from the waistline (LL, the piece's top edge) down to the
+        # hem.  Referencing LL rather than the y=0 construction row means
+        # the spread at the waist is exactly pleat_depth, so folding the
+        # pleat out restores the waist span exactly.
+        span_y = float(LL[1]) - ankle_y
+
+        def _spread(p):
+            p = np.asarray(p, float)
+            if p[0] >= crease_x:
+                return p
+            f = max(0.0, min(1.0, (float(p[1]) - ankle_y) / span_y))
+            return np.array([p[0] - pleat_depth * f, p[1]])
+
+        L, LL, K, X, M, W = (_spread(p) for p in (L, LL, K, X, M, W))
+
+        # First pleat folds on the creaseline; second sits PLEAT_SPACING
+        # toward centre front and takes up what the two darts used to.
+        dart_total = DART_COUNT * DART_INTAKE
+        for centre, intake in ((crease_x - pleat_depth / 2, pleat_depth),
+                               (crease_x - pleat_depth - PLEAT_SPACING - dart_total / 2,
+                                dart_total)):
+            legs = (np.array([centre - intake / 2, waist_at(centre - intake / 2)]),
+                    np.array([centre + intake / 2, waist_at(centre + intake / 2)]))
+            pleats.append((legs[0], legs[1]))
+            # measured along the (sloping) waistline, exactly as the dart
+            # gaps are, so finished_waist stays an honest seam length
+            pleat_intake += float(np.linalg.norm(legs[1] - legs[0]))
+        dart_points = []   # darts are consumed by the second pleat
+
+    leg = None
+    if flared_leg:
+        # The book measures the flare from the BACK crotch level and takes
+        # 1/2in off for the front, so the caller hands us that width.
+        if back_crotch_width is None:
+            raise ValueError("flared_leg needs back_crotch_width (the back panel's crotch level)")
+        leg = legline.build(C, M, W[0], HEM_HALF, ankle_y, knee_y,
+                            flare_half=back_crotch_width / 2.0 - legline.FRONT_REDUCTION,
+                            flare_position=flare_position)
+        U, V, UU, VV = leg.ankle_out, leg.ankle_in, leg.knee_out, leg.knee_in
+    else:
+        U = np.array([W[0] + HEM_HALF, ankle_y])   # ankle, outseam side
+        V = np.array([W[0] - HEM_HALF, ankle_y])   # ankle, inseam side
+        UU = on_line(C, U, y=knee_y)   # knee, outseam side
+        VV = on_line(M, V, y=knee_y)   # knee, inseam side
 
     outline = []
-    prev = L
+    finished_waist = 0.0
+    prev = LL
     for leg_in, point, leg_out in dart_points:
         outline.append(("line", prev, leg_in))
+        finished_waist += float(np.linalg.norm(leg_in - prev))
         outline.append(("dart", leg_in, point))
         outline.append(("dart", point, leg_out))
         prev = leg_out
     outline.append(("line", prev, Q))
+    finished_waist += float(np.linalg.norm(Q - prev))
+    finished_waist -= pleat_intake   # pleats fold out before the band goes on
     outline.append(("cubic_curve", lambda t: curve_hip(Q, C, t), Q, C))
-    outline.append(("line", C, U))
-    outline.append(("line", U, V))
-    outline.append(("cubic_curve", lambda t: curve_inseam(V, M, t), V, M))
+    if leg is not None:
+        outline.append(("line", C, leg.flare_out))
+        outline.append(("line", leg.flare_out, U))
+        outline.append(("line", U, V))
+        outline.append(("line", V, leg.flare_in))
+        outline.append(("cubic_curve", lambda t: curve_inseam(leg.flare_in, M, t),
+                        leg.flare_in, M))
+    else:
+        outline.append(("line", C, U))
+        outline.append(("line", U, V))
+        outline.append(("cubic_curve", lambda t: curve_inseam(V, M, t), V, M))
     outline.append(("cubic_curve", lambda t: curve_crotch(X, M, 1 - t), M, X))
-    outline.append(("line", X, L))
+    outline.append(("line", X, LL))
 
     return SimpleNamespace(
         front_width=front_width, hip_depth=hip_depth, knee_depth=knee_depth,
-        L=L, Q=Q, K=K, C=C, D=D,
-        X=X, M=M, W=W, U=U, V=V, Y=Y, Z=Z,
-        n_darts=DART_COUNT, intake_each=DART_INTAKE, dart_points=dart_points,
-        dart_letters=_dart_letters[:DART_COUNT],
+        finished_waist=finished_waist,
+        L=L, LL=LL, Q=Q, K=K, C=C, D=D,
+        side_waist=Q, cf_waist=LL,
+        X=X, M=M, W=W, U=U, V=V, UU=UU, VV=VV,
+        n_darts=len(dart_points), intake_each=DART_INTAKE, dart_points=dart_points,
+        dart_letters=_dart_letters[:len(dart_points)],
+        n_pleats=len(pleats), pleat_intake=pleat_intake, pleats=pleats,
         outline=outline,
         construction_lines=[(K, D)],
-        dart_lines=[],
+        dart_lines=[(a, np.array([a[0], a[1] - PLEAT_FOLD_DEPTH])) for a, _ in pleats]
+                   + [(b, np.array([b[0], b[1] - PLEAT_FOLD_DEPTH])) for _, b in pleats],
+        notches=[C, UU, VV] + [a for a, _ in pleats] + [b for _, b in pleats],
     )

@@ -247,6 +247,34 @@ def rectangle_dims(outline, seam_allowance, seam_allowance_fn=None,
     return dict(finished_w=finished_w, finished_h=finished_h, cut_w=cut_w, cut_h=cut_h)
 
 
+def _notch_dir(pt, outline_poly, centroid):
+    """Inward unit normal of the outline at (or nearest to) *pt*.
+
+    Notches are cut perpendicular to the seam they sit on, so the direction
+    comes from the local tangent of the nearest outline edge — not from the
+    corner-bisector logic _inward_dir uses for text labels (a notch may sit
+    mid-edge, where there is no corner to bisect).
+    """
+    pt = np.asarray(pt, float)
+    centroid = np.asarray(centroid, float)
+    n = len(outline_poly)
+    best_d, best_i = None, 0
+    for i in range(n - 1):
+        d = _seg_dist(pt, outline_poly[i], outline_poly[i + 1])
+        if best_d is None or d < best_d:
+            best_d, best_i = d, i
+    edge = outline_poly[best_i + 1] - outline_poly[best_i]
+    el = float(np.linalg.norm(edge))
+    if el < 1e-12:
+        v = centroid - pt
+        vl = float(np.linalg.norm(v))
+        return v / vl if vl > 1e-12 else np.array([1.0, 0.0])
+    nv = np.array([-edge[1] / el, edge[0] / el])
+    if float(np.dot(nv, centroid - pt)) < 0:
+        nv = -nv
+    return nv
+
+
 def _curve_groups(segments):
     """Find maximal runs of consecutive quadratic/cubic_curve segments in a
     closed outline (e.g. two halves of one armhole, or an inseam curve
@@ -669,7 +697,7 @@ def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
                seam_allowance_fn=None, label_offsets=None,
                curve_seam_segments=None, curve_seam_allowance=None,
                unclipped_construction_lines=None, text_annotations=None,
-               waist_detect=True, merge_consecutive=True):
+               waist_detect=True, merge_consecutive=True, notches=None):
     # Compute seam allowance runs (open polylines) in model space for bbox.
     # seam_allowance_fn, if provided, takes a run (np.array of points) and returns
     # the SA for that run, allowing per-run overrides.
@@ -788,6 +816,19 @@ def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
         f'  <path d="{dart_d}" fill="none" stroke="#bbb"'
         f'        stroke-width="3" stroke-linejoin="round"/>',
     ]
+
+    # Alignment notches — short ticks cut perpendicular into the seam, so
+    # matching pieces (front/back outseam, inseam, waistband) can be lined
+    # up when sewing.
+    NOTCH_IN = 0.25   # inches
+    for pt in (notches or []):
+        d = _notch_dir(pt, outline_poly, centroid_model)
+        x0, y0 = convert(np.asarray(pt, float))[0]
+        x1, y1 = convert(np.asarray(pt, float) + d * NOTCH_IN)[0]
+        lines.append(
+            f'  <line x1="{x0:.1f}" y1="{y0:.1f}" x2="{x1:.1f}" y2="{y1:.1f}"'
+            f'        stroke="{stroke}" stroke-width="6" stroke-linecap="round"/>'
+        )
 
     # Collect dots (clipped) and text (unclipped) separately.
     # Keeping text outside the clip path prevents concave-corner labels

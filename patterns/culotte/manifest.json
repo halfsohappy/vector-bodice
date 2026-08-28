@@ -3,10 +3,11 @@
   "name": "culotte",
   "source": "adapted from Pattern Making for Fashion Design, 5th ed. (Helen Joseph-Armstrong), \"Culotte — Foundation 1,\" p.571-572, built on the A-line skirt",
   "notes": [
-    "Dart placement (how far each dart sits from center front/back) is estimated by spacing darts evenly across the waist, since the source book's exact placement value wasn't available.",
-    "The waistline and side-seam curves are smooth mathematical approximations of the book's hand-drafting curve tool, not a literal reproduction of its shape.",
-    "The flare below the hip is computed as one combined formula, standing in for the book's two separate paper steps (closing a dart to swing the hem out, then a further side-seam widening). Same finished shape, simpler math.",
-    "The crotch curve is a smooth mathematical blend standing in for the book's hand-drafted curve, matched to its start and end direction rather than its exact hand-drawn path."
+      "Dart placement (how far each dart sits from center front/back) is estimated by spacing darts evenly across the waist, since the source book's exact placement value wasn't available.",
+      "The waistline and side-seam curves are smooth mathematical approximations of the book's hand-drafting curve tool, not a literal reproduction of its shape.",
+      "The flare below the hip is computed as one combined formula, standing in for the book's two separate paper steps (closing a dart to swing the hem out, then a further side-seam widening). Same finished shape, simpler math.",
+      "The crotch curve is a smooth mathematical blend standing in for the book's hand-drafted curve, matched to its start and end direction rather than its exact hand-drawn path.",
+      "The centre-front box pleat inserts the book's 5in at the centre front and marks the two fold lines with a 5in guide. That fullness folds back out before the waistband goes on, so the finished waist is unchanged."
   ],
   "files": [
     "__init__.py",
@@ -32,7 +33,10 @@
       ]
     }
   ],
-  "options": [],
+  "options": [
+    { "key": "box_pleat",       "label": "Centre-front box pleat", "default": false },
+    { "key": "box_pleat_flare", "label": "Extra flare at the pleat hem", "default": false, "requires": "box_pleat" }
+  ],
   "pieces": [
     { "id": "front_panel", "label": "Front" },
     { "id": "back_panel",  "label": "Back" },

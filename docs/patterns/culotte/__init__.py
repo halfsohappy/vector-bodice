@@ -16,11 +16,13 @@ from . import settings
 # ── Build ─────────────────────────────────────────────────────────────────────
 
 def build(waist_arc_front, waist_arc_back, hip_arc_front, hip_arc_back,
-          hip_depth_front, hip_depth_back, crotch_depth, skirt_length):
+          hip_depth_front, hip_depth_back, crotch_depth, skirt_length,
+          box_pleat=False, box_pleat_flare=False):
     """Draft every piece of the culotte.  Returns {piece_id: SimpleNamespace}."""
     info = dart_info(waist_arc_front, waist_arc_back, hip_arc_front, hip_arc_back)
     front = front_panel.build(hip_arc_front, hip_depth_front, skirt_length,
-                              info.front_count, info.front_intake, crotch_depth)
+                              info.front_count, info.front_intake, crotch_depth,
+                              box_pleat=box_pleat, box_pleat_flare=box_pleat_flare)
     back = back_panel.build(hip_arc_back, hip_depth_back, skirt_length,
                             info.back_count, info.back_intake, crotch_depth)
     waist_total = 2 * (waist_arc_front + waist_arc_back)
@@ -44,6 +46,7 @@ def _panel_args(ns, corner_labels, interior_labels, style, seam_allowance, white
         seam_allowance=seam_allowance,
         curve_seam_segments=_curve_groups(ns.outline),
         curve_seam_allowance=seam_allowance,
+        notches=getattr(ns, "notches", None),
     )
 
 
@@ -82,6 +85,8 @@ def render_web(params):
         float(params["hip_arc_front"]), float(params["hip_arc_back"]),
         float(params["hip_depth_front"]), float(params["hip_depth_back"]),
         float(params["crotch_depth"]), float(params["skirt_length"]),
+        box_pleat=bool(params.get("box_pleat", False)),
+        box_pleat_flare=bool(params.get("box_pleat_flare", False)),
     )
     args = _all_svg_args(pieces, float(params.get("seam_allowance", 0.75)),
                          bool(params.get("white_fill", False)))
@@ -101,10 +106,12 @@ def render_web(params):
 
 def render(waist_arc_front, waist_arc_back, hip_arc_front, hip_arc_back,
            hip_depth_front, hip_depth_back, crotch_depth, skirt_length,
-           prefix="culotte", seam_allowance=0.75):
+           prefix="culotte", seam_allowance=0.75,
+           box_pleat=False, box_pleat_flare=False):
     """Render every piece of the culotte to <prefix>_<piece>.svg files."""
     pieces = build(waist_arc_front, waist_arc_back, hip_arc_front, hip_arc_back,
-                   hip_depth_front, hip_depth_back, crotch_depth, skirt_length)
+                   hip_depth_front, hip_depth_back, crotch_depth, skirt_length,
+                   box_pleat=box_pleat, box_pleat_flare=box_pleat_flare)
     args = _all_svg_args(pieces, seam_allowance, white_fill=False)
     for piece_id, kw in args.items():
         rect = rectangle_dims(kw["outline"], kw.get("seam_allowance", 0), kw.get("seam_allowance_fn"),

@@ -12,6 +12,7 @@ import argparse
 import json
 from pathlib import Path
 
+from patterns import add_option_args, collect_options
 from . import render
 
 _manifest = json.loads((Path(__file__).parent / "manifest.json").read_text())
@@ -23,8 +24,7 @@ parser = argparse.ArgumentParser(
     description=f"Render {_manifest['name']} pieces to SVG.")
 for f in FIELDS:
     parser.add_argument(f"--{f['key']}", type=float, required=True, help=f["title"].lower())
-for o in OPTIONS:
-    parser.add_argument(f"--{o['key']}", action="store_true", help=o["label"].lower())
+add_option_args(parser, OPTIONS)
 parser.add_argument("--prefix", type=str, default="jean",
                     help="output filename prefix")
 parser.add_argument("--seam-allowance", type=float, default=0.75,
@@ -32,7 +32,7 @@ parser.add_argument("--seam-allowance", type=float, default=0.75,
 args = parser.parse_args()
 
 vals = {f["key"]: getattr(args, f["key"]) for f in FIELDS}
-opt_vals = {o["key"]: getattr(args, o["key"]) for o in OPTIONS}
+opt_vals = collect_options(args, OPTIONS)
 render(vals["waist_arc_front"], vals["waist_arc_back"],
        vals["hip_arc_front"], vals["hip_arc_back"],
        vals["crotch_depth"], vals["pant_length"],

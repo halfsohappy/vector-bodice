@@ -7,13 +7,22 @@
     "The waistline is drafted as a straight line through the dart legs rather than the book's own slightly-curved waistline — the book itself describes this curve as only slight.",
     "The hip curve and the outseam/inseam legs are smooth mathematical approximations of the book's hand-drafting curve tool, not a literal reproduction of its shape.",
     "The hem edge is left as the finished cut line, matching every other pant/skirt piece in this tool — add your own hem allowance (the book suggests about 1in) separately when cutting.",
-    "The seam-allowance preview line isn't drawn along the curved edges (hip curve, crotch curve, inseam) — only the straight edges — the same as this tool's other curved-seam pieces (e.g. culotte's crotch curve). Add allowance by eye along those curves when cutting."
+    "Seam allowance is drawn on every seam, curved edges included. Notches mark the hip on the outseam and the knee on both outseam and inseam, so front and back can be aligned when sewing; the waistband is notched at both side seams and centre back.",
+    "The waistband is sized from the drafted pattern rather than from the raw waist measurement, so it always matches the pant it is sewn to. It therefore carries the draft's own 1in of waist ease rather than the book's separate 1/2in waistband ease.",
+    "The fly, shield and belt-loop strip are drafted at the book's stated sizes for a standard 7in pant zipper (fly 1 1/2 x 7 1/2in, shield 2 1/2 x 8 1/2in, loop strip 3/4 x 13 1/2in for six loops).",
+    "The two-pleat front replaces both waist darts with pleats and adds the first pleat's fullness at the creaseline. The fullness folds out before the waistband goes on, so the finished waist — and the waistband — are unchanged.",
+    "The flared leg widens the hem to the back crotch-level width (front 1/2in narrower), flaring from above, at, or below the knee as chosen. The book's separate 1in length addition is included.",
+    "The pocket's lining shape comes from closing the waist darts and pivoting on a hinge in the book; here that pivot is a closed-form approximation, the same technique used for the A-line skirt's dart transfer."
   ],
   "files": [
     "__init__.py",
     "front_panel.py",
     "back_panel.py",
     "waistband.py",
+    "fly.py",
+    "belt_loops.py",
+    "legline.py",
+    "pocket.py",
     "settings.py"
   ],
   "measurementGroups": [
@@ -31,11 +40,32 @@
       ]
     }
   ],
-  "options": [],
+  "options": [
+    { "key": "pleated_front", "label": "Two-pleat front (replaces darts)", "default": false },
+    { "key": "pleat_depth",   "label": "First pleat depth (in)", "type": "number", "default": 2.0, "min": 0.5, "max": 4, "step": 0.25, "requires": "pleated_front" },
+    { "key": "flared_leg",    "label": "Flared leg", "default": false },
+    { "key": "flare_position", "label": "Flare starts", "type": "choice", "default": "at_knee",
+      "choices": [
+        { "value": "above_knee", "label": "above knee" },
+        { "value": "at_knee",    "label": "at knee" },
+        { "value": "below_knee", "label": "below knee" }
+      ],
+      "requires": "flared_leg" },
+    { "key": "pockets",    "label": "Slash pockets",       "default": false },
+    { "key": "fly_front",  "label": "Fly & shield closure", "default": false },
+    { "key": "belt_loops", "label": "Belt loops",           "default": false }
+  ],
   "pieces": [
-    { "id": "front_panel", "label": "Front" },
-    { "id": "back_panel",  "label": "Back" },
-    { "id": "waistband",   "label": "Waistband" }
+    { "id": "front_panel",  "label": "Front" },
+    { "id": "back_panel",   "label": "Back" },
+    { "id": "waistband",    "label": "Waistband" },
+    { "id": "fly",          "label": "Fly" },
+    { "id": "shield",       "label": "Shield" },
+    { "id": "belt_loops",   "label": "Belt Loops" },
+    { "id": "pocket_facing",  "label": "Pocket Facing" },
+    { "id": "pocket_pouch",   "label": "Pocket Pouch" },
+    { "id": "pocket_backing", "label": "Pocket Backing" },
+    { "id": "pocket_lining",  "label": "Pocket Lining" }
   ],
   "testSizes": [
     { "label": "S",  "values": { "waist_arc_front": 6.5, "waist_arc_back": 6.5, "hip_arc_front": 8.75, "hip_arc_back": 8.75, "crotch_depth": 10.0, "pant_length": 38 } },

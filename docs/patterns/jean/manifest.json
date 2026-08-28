@@ -3,11 +3,15 @@
   "name": "jean",
   "source": "adapted from Pattern Making for Fashion Design, 5th ed. (Helen Joseph-Armstrong), \"Jean — Foundation 4,\" p.578-582",
   "notes": [
-    "The front dart's placement is estimated at the midpoint of the waist ease-zone, since the book marks it at a fixed, non-scaling distance rather than a formula — the same convention already used for the back dart, whose book placement happens to already be that same midpoint.",
-    "The waistline is drafted as a straight line through the dart legs rather than a curve, and the hip curve/outseam/inseam legs are smooth mathematical approximations of the book's hand-drafting curve tool — same as the trouser and slack foundations.",
-    "Back pitching (recovering the crotch length lost to the jean's shorter back crotch extension) is computed by comparing this draft's own back crotch curve length to a reference curve built with the trouser foundation's longer extension, then lifting the whole back waist row by the difference — a mathematical stand-in for the book's slash-and-pivot paper technique, matched by outcome (recovered length) rather than by literal paper manipulation.",
-    "The hem edge is left as the finished cut line — add your own hem allowance separately when cutting. The seam-allowance preview line isn't drawn along the curved edges (hip curve, crotch curve, inseam), same as the trouser and slack foundations.",
-    "The \"subtract 1/4in for a higher crotch\" and personal-thigh-measurement fit checks the book offers are not modeled — this draft always uses the base Figure 1-7 formulas."
+      "The front dart's placement is estimated at the midpoint of the waist ease-zone, since the book marks it at a fixed, non-scaling distance rather than a formula — the same convention already used for the back dart, whose book placement happens to already be that same midpoint.",
+      "The waistline is drafted as a straight line through the dart legs rather than a curve, and the hip curve/outseam/inseam legs are smooth mathematical approximations of the book's hand-drafting curve tool — same as the trouser and slack foundations.",
+      "The centre back is pitched in 1 3/4in and up 1in (and the centre front in 1/2in and up 1/4in), exactly as the book's draft specifies — that built-in lift is what compensates for the jean's shorter crotch extension. The book's separate \"Pitching the Back Pattern\" procedure is an optional personal-fit correction for anyone who still needs more crotch length, and is not applied automatically here.",
+      "The hem edge is left as the finished cut line — add your own hem allowance separately when cutting.",
+      "Seam allowance is drawn on every seam, curved edges included. Notches mark the hip on the outseam and the knee on both outseam and inseam; the waistband is notched at both side seams and centre back.",
+      "The \"subtract 1/4in for a higher crotch\" and personal-thigh-measurement fit checks the book offers are not modeled — this draft always uses the base Figure 1-7 formulas.",
+      "The fly, shield and belt-loop strip are drafted at the book's stated sizes for a standard 7in pant zipper (fly 1 1/2 x 7 1/2in, shield 2 1/2 x 8 1/2in, loop strip 3/4 x 13 1/2in for six loops).",
+      "The flared leg widens the hem to the back crotch-level width (front 1/2in narrower), flaring from above, at, or below the knee as chosen. The book's separate 1in length addition is included, and the hemline is drawn straight between the two ankle points rather than squared to the flared legline.",
+      "The pocket's lining shape comes from closing the waist darts and pivoting on a hinge in the book; here that pivot is a closed-form approximation, the same technique used for the A-line skirt's dart transfer. Figure 4a's 12in and 4in are read as the bag's depth below the waist and how far its inner edge sits beyond the entry."
   ],
   "files": [
     "__init__.py",
@@ -31,12 +35,30 @@
     }
   ],
   "options": [
-    { "key": "relaxed_fit", "label": "Relaxed fit (+1in back crotch ease)", "default": false }
+    { "key": "relaxed_fit", "label": "Relaxed fit (+1in back crotch ease)", "default": false },
+    { "key": "flared_leg",    "label": "Flared leg", "default": false },
+    { "key": "flare_position", "label": "Flare starts", "type": "choice", "default": "at_knee",
+      "choices": [
+        { "value": "above_knee", "label": "above knee" },
+        { "value": "at_knee",    "label": "at knee" },
+        { "value": "below_knee", "label": "below knee" }
+      ],
+      "requires": "flared_leg" },
+    { "key": "pockets",    "label": "Slash pockets",       "default": false },
+    { "key": "fly_front",  "label": "Fly & shield closure", "default": false },
+    { "key": "belt_loops", "label": "Belt loops",           "default": false }
   ],
   "pieces": [
-    { "id": "front_panel", "label": "Front" },
-    { "id": "back_panel",  "label": "Back" },
-    { "id": "waistband",   "label": "Waistband" }
+    { "id": "front_panel",  "label": "Front" },
+    { "id": "back_panel",   "label": "Back" },
+    { "id": "waistband",    "label": "Waistband" },
+    { "id": "fly",          "label": "Fly" },
+    { "id": "shield",       "label": "Shield" },
+    { "id": "belt_loops",   "label": "Belt Loops" },
+    { "id": "pocket_facing",  "label": "Pocket Facing" },
+    { "id": "pocket_pouch",   "label": "Pocket Pouch" },
+    { "id": "pocket_backing", "label": "Pocket Backing" },
+    { "id": "pocket_lining",  "label": "Pocket Lining" }
   ],
   "testSizes": [
     { "label": "S",  "values": { "waist_arc_front": 6.5, "waist_arc_back": 6.5, "hip_arc_front": 8.75, "hip_arc_back": 8.75, "crotch_depth": 10.0, "pant_length": 38 } },
