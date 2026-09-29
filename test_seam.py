@@ -1,8 +1,16 @@
 """
-test_seam.py — Seam-allowance regression suite for patterns/bodice / render.py.
+test_seam.py — Seam-allowance regression suite for render.py and the patterns.
 
 Tests a representative range of bodice measurements (XS through 2XL, petite,
-tall, high-contrast hourglass) across a range of seam-allowance values.
+tall, high-contrast hourglass) across a range of seam-allowance values, then
+sweeps every pattern in patterns/index.json at its manifest test sizes.
+
+The core property checked everywhere: every seam-allowance offset point
+(straight runs and curve groups alike) lies OUTSIDE the piece outline.  The
+outward side is decided by the outline's winding direction, so this holds on
+concave edges (neck and armhole scoops, the neckline against a centre-front
+fold) where a "move away from the centroid" test would flip the allowance
+into the garment.
 
 Run:
     python3 test_seam.py
@@ -12,7 +20,8 @@ Exit code 0 = all passed.  Any failures are printed with details.
 
 import os
 import sys
-import math
+import json
+import importlib
 import tempfile
 import traceback
 import numpy as np
@@ -24,6 +33,7 @@ sys.path.insert(0, SCRIPT_DIR)
 import render as rnd
 import patterns.bodice as blk
 import patterns.bodice.sleeve as slv
+from patterns.bodice import settings as bodice_settings
 
 # ── 2. Test fixture definitions ───────────────────────────────────────────────
 # Each tuple: (alpha, beta, gamma, delta, epsilon, zeta, eta, theta, label)
@@ -60,6 +70,10 @@ SLEEVE_CASES = [
     (24, 10.5, 18, 17, 5, "wide_cuff"),
 ]
 
+# Offset points may graze the outline at a corner; anything deeper than this
+# (inches) inside the piece is a genuinely inverted allowance.
+INSIDE_TOL = 0.02
+
 # ── 3. Helpers ────────────────────────────────────────────────────────────────
 
 def _build_bodice(alpha, beta, gamma, delta, epsilon, zeta, eta, theta):
@@ -67,18 +81,48 @@ def _build_bodice(alpha, beta, gamma, delta, epsilon, zeta, eta, theta):
     return blk.build(alpha, beta, gamma, delta, epsilon, zeta, eta, theta)
 
 
-def _check_seam_runs(segments, distance, centroid, label):
+def _inside_points(off_pts, poly):
+    """Indices of offset points lying inside the outline polygon by more
+    than INSIDE_TOL.  Vectorised equivalents of render._pip / _poly_dist so
+    the sweep over every pattern stays fast."""
+    P  = np.atleast_2d(np.asarray(off_pts, float))
+    A  = np.asarray(poly, float)
+    B  = np.roll(A, -1, axis=0)
+    # ray-casting: for each point, count crossings of edges A→B
+    x, y   = P[:, 0][:, None], P[:, 1][:, None]
+    ax, ay = A[:, 0][None, :], A[:, 1][None, :]
+    bx, by = B[:, 0][None, :], B[:, 1][None, :]
+    straddle = (ay > y) != (by > y)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        xint = (bx - ax) * (y - ay) / (by - ay) + ax
+    inside = (np.sum(straddle & (x < xint), axis=1) % 2) == 1
+    if not inside.any():
+        return []
+    # distance from each inside point to the nearest polygon edge
+    idx = np.where(inside)[0]
+    Q   = P[idx]
+    V   = B - A                                         # edge vectors
+    L2  = np.maximum(np.sum(V * V, axis=1), 1e-12)
+    W   = Q[:, None, :] - A[None, :, :]                 # point - edge start
+    t   = np.clip(np.sum(W * V[None, :, :], axis=2) / L2[None, :], 0.0, 1.0)
+    proj = A[None, :, :] + t[:, :, None] * V[None, :, :]
+    dist = np.min(np.linalg.norm(Q[:, None, :] - proj, axis=2), axis=1)
+    return [int(i) for i, d in zip(idx, dist) if d > INSIDE_TOL]
+
+
+def _check_seam_runs(segments, distance, label):
     """
     Verify that:
       • every "line" (non-dart) edge belongs to exactly one seam run
       • each run's offset polyline has the same number of points as the run
       • no offset point is NaN or Inf
-      • each offset point is *farther* from the centroid than the original
-        (i.e. the offset is genuinely outward)
+      • the run's endpoints are offset by exactly *distance* (pure perpendicular)
+      • no offset point lies inside the piece (the offset is genuinely outward)
     Returns list of error strings (empty = pass).
     """
     errors = []
-    centroid = np.asarray(centroid, float)
+    poly        = rnd._sample_outline(segments)
+    orientation = rnd._outline_orientation(poly)
 
     # Collect seam line edges
     seam_edges = []
@@ -112,22 +156,77 @@ def _check_seam_runs(segments, distance, centroid, label):
         if len(run) < 2:
             errors.append(f"{label}: run {ri} has only {len(run)} pt(s)")
             continue
-        off = rnd._offset_open_polyline(run, distance, centroid)
+        off = rnd._offset_open_polyline(run, distance, orientation)
         if off.shape != run.shape:
             errors.append(f"{label}: run {ri} shape mismatch {run.shape} vs {off.shape}")
             continue
         if not np.all(np.isfinite(off)):
             errors.append(f"{label}: run {ri} has NaN/Inf in offset")
             continue
-        # Each offset pt should be farther from centroid (or same if distance==0)
-        d_orig = np.linalg.norm(run - centroid, axis=1)
-        d_off  = np.linalg.norm(off  - centroid, axis=1)
-        bad = np.where((d_off < d_orig - 1e-3) & (d_orig > 1e-3))[0]
-        if len(bad):
+        for end in (0, -1):
+            d = float(np.linalg.norm(off[end] - run[end]))
+            if abs(d - distance) > 1e-6:
+                errors.append(f"{label}: run {ri} endpoint {end} offset by {d:.4f}, "
+                              f"expected {distance}")
+        bad = _inside_points(off, poly)
+        if bad:
             errors.append(
-                f"{label}: run {ri}: {len(bad)} offset pt(s) moved inward "
-                f"(indices {bad[:3].tolist()})"
+                f"{label}: run {ri} ({np.round(run[0], 2).tolist()}→"
+                f"{np.round(run[-1], 2).tolist()}): {len(bad)} offset pt(s) "
+                f"inside the piece (indices {bad[:3]})"
             )
+    return errors
+
+
+def _check_curve_groups(segments, groups, distance, label):
+    """Every curve-group offset must be finite and lie outside the piece."""
+    errors = []
+    poly        = rnd._sample_outline(segments)
+    orientation = rnd._outline_orientation(poly)
+    for gi, group in enumerate(groups):
+        off = rnd._offset_curve_samples(group, distance, orientation)
+        if len(off) < 2:
+            errors.append(f"{label}: curve group {gi} offset produced < 2 points")
+            continue
+        if not np.all(np.isfinite(off)):
+            errors.append(f"{label}: curve group {gi} offset has NaN/Inf")
+            continue
+        bad = _inside_points(off, poly)
+        if bad:
+            errors.append(
+                f"{label}: curve group {gi}: {len(bad)}/{len(off)} offset pt(s) "
+                f"inside the piece (indices {bad[:3]}…{bad[-3:]})"
+            )
+    return errors
+
+
+def _check_rendered_piece(label, outline, kw):
+    """Recompute exactly the offsets _write_svg draws for one piece (from its
+    keyword arguments) and check none of them land inside the outline."""
+    errors = []
+    poly        = rnd._sample_outline(outline)
+    orientation = rnd._outline_orientation(poly)
+    sa    = kw.get("seam_allowance", 0)
+    sa_fn = kw.get("seam_allowance_fn")
+    for run, run_sa in rnd._seam_runs_no_waist(
+            outline, sa, sa_fn,
+            waist_detect=kw.get("waist_detect", True),
+            merge_consecutive=kw.get("merge_consecutive", True)):
+        off = rnd._offset_open_polyline(run, run_sa, orientation)
+        bad = _inside_points(off, poly)
+        if bad:
+            errors.append(f"{label}: line run {np.round(run[0], 2).tolist()}→"
+                          f"{np.round(run[-1], 2).tolist()}: {len(bad)} offset "
+                          f"pt(s) inside the piece")
+    groups, csa = kw.get("curve_seam_segments"), kw.get("curve_seam_allowance")
+    if groups and csa and csa > 1e-6:
+        errors += _check_curve_groups(outline, groups, csa, label)
+    for pt in (kw.get("notches") or []):
+        d = rnd._notch_dir(pt, poly, orientation)
+        probe = np.asarray(pt, float) + d * 0.1
+        if not rnd._pip(probe, poly):
+            errors.append(f"{label}: notch at {np.round(pt, 2).tolist()} points "
+                          f"out of the piece")
     return errors
 
 
@@ -160,18 +259,20 @@ def run_tests():
             failure_log.append(f"[BUILD FAIL] {name}: {e}")
             continue
 
-        centroid_front = rnd._sample_outline(bk.front_bodice).mean(axis=0)
-        centroid_back  = rnd._sample_outline(bk.back_bodice).mean(axis=0)
+        folded_front, _ = blk._front_piece_args(bk, fold=True)
+        pieces = [("front",      bk.front_bodice),
+                  ("back",       bk.back_bodice),
+                  ("front_fold", folded_front)]
 
-        # 4b. Seam-run geometry checks across allowances
+        # 4b. Seam-run + curve-group geometry checks across allowances
         for sa in SEAM_ALLOWANCES:
             total += 1
             errs = []
             if sa > 0:
-                errs += _check_seam_runs(bk.front_bodice, sa, centroid_front,
-                                         f"{name}/front/sa={sa}")
-                errs += _check_seam_runs(bk.back_bodice,  sa, centroid_back,
-                                         f"{name}/back/sa={sa}")
+                for pname, outline in pieces:
+                    errs += _check_seam_runs(outline, sa, f"{name}/{pname}/sa={sa}")
+                    errs += _check_curve_groups(outline, rnd._curve_groups(outline),
+                                                sa, f"{name}/{pname}/sa={sa}")
             if errs:
                 failed += 1
                 failure_log.extend(errs)
@@ -208,6 +309,21 @@ def run_tests():
             failed += 1
             failure_log.append(f"[FOLD FAIL] {name}: {e}\n" + traceback.format_exc())
 
+        # 4e. Exactly what the renderer draws (per-run SA rules, centre-back
+        #     override, fold) must stay outside the piece too.
+        for sa in [0.5, 0.75, 1.0]:
+            total += 1
+            front_args, back_args = blk._bodice_svg_args(bk, True, sa)
+            errs  = _check_rendered_piece(f"{name}/render-front-fold/sa={sa}",
+                                          front_args.pop("outline"), front_args)
+            errs += _check_rendered_piece(f"{name}/render-back/sa={sa}",
+                                          back_args.pop("outline"), back_args)
+            if errs:
+                failed += 1
+                failure_log.extend(errs)
+            else:
+                passed += 1
+
     # ── 5. Sleeve tests ────────────────────────────────────────────────────────
     for sigma, upsilon, omega, xi, psi, name in SLEEVE_CASES:
         # 5a. Build sleeve
@@ -220,32 +336,17 @@ def run_tests():
             continue
         passed += 1
 
-        # 5b. Curve seam allowance offset check
+        # 5b. Curve (cap) and straight seam allowance offset check
         for sa in [0.375, 0.5, 0.75, 1.0]:
             total += 1
-            try:
-                centroid = rnd._sample_outline(sl.outline).mean(axis=0)
-                off = rnd._offset_curve_samples(sl.cap_segments, sa, centroid)
-                if len(off) < 2:
-                    raise RuntimeError("curve offset produced < 2 points")
-                if not np.all(np.isfinite(off)):
-                    raise RuntimeError("curve offset has NaN/Inf")
-                # Offset should be farther from centroid
-                cap_pts = []
-                for seg in sl.cap_segments:
-                    _, func, _, _ = seg
-                    for t in np.linspace(0, 1, 20):
-                        cap_pts.append(func(t))
-                cap_pts = np.array(cap_pts)
-                d_orig = np.linalg.norm(cap_pts - centroid, axis=1).mean()
-                d_off  = np.linalg.norm(off - centroid, axis=1).mean()
-                if d_off < d_orig - 0.01:
-                    raise RuntimeError(
-                        f"curve offset moved inward: orig={d_orig:.3f} off={d_off:.3f}")
-                passed += 1
-            except Exception as e:
+            errs  = _check_curve_groups(sl.outline, [sl.cap_segments], sa,
+                                        f"sleeve/{name}/sa={sa}")
+            errs += _check_seam_runs(sl.outline, sa, f"sleeve/{name}/sa={sa}")
+            if errs:
                 failed += 1
-                failure_log.append(f"[SLEEVE CURVE SA FAIL] {name} sa={sa}: {e}")
+                failure_log.extend(errs)
+            else:
+                passed += 1
 
         # 5c. Render smoke-test
         for sa in [0.0, 0.5, 0.75]:
@@ -266,11 +367,67 @@ def run_tests():
                     + traceback.format_exc()
                 )
 
-    # ── 6. Report ──────────────────────────────────────────────────────────────
+    # ── 6. Every pattern, every manifest test size ────────────────────────────
+    # Intercept _write_svg so the exact per-piece arguments each pattern
+    # passes (SA rules, waist_detect, merge_consecutive, curve groups,
+    # notches) are checked, then let the real renderer run.
+    real_write_svg = rnd._write_svg
+    captured = []
+
+    def capturing_write_svg(path, outline, *args, **kw):
+        captured.append((outline, dict(kw)))
+        return real_write_svg(path, outline, *args, **kw)
+
+    index = json.load(open(os.path.join(SCRIPT_DIR, "patterns", "index.json")))
+    for pid in index["patterns"]:
+        mod = importlib.import_module(f"patterns.{pid}")
+        manifest = json.load(open(os.path.join(SCRIPT_DIR, "patterns", pid,
+                                               "manifest.json")))
+        # Patterns import _write_svg by name; patch the module global.
+        had_own = hasattr(mod, "_write_svg")
+        if had_own:
+            mod._write_svg = capturing_write_svg
+        rnd._write_svg = capturing_write_svg
+        try:
+            for size in manifest.get("testSizes", []):
+                for sa in [0.5, 0.75, 1.0]:
+                    total += 1
+                    params = dict(size["values"])
+                    for opt in manifest.get("options", []):
+                        if opt.get("default") is not None:
+                            params[opt["key"]] = opt["default"]
+                    params["seam_allowance"] = sa
+                    captured.clear()
+                    try:
+                        mod.render_web(params)
+                        errs = []
+                        for pi, (outline, kw) in enumerate(captured):
+                            errs += _check_rendered_piece(
+                                f"{pid}/{size['label']}/piece{pi}/sa={sa}",
+                                outline, kw)
+                        if not captured:
+                            errs.append(f"{pid}/{size['label']}: rendered no pieces")
+                        if errs:
+                            failed += 1
+                            failure_log.extend(errs)
+                        else:
+                            passed += 1
+                    except Exception as e:
+                        failed += 1
+                        failure_log.append(
+                            f"[PATTERN RENDER FAIL] {pid}/{size['label']} sa={sa}: {e}\n"
+                            + traceback.format_exc())
+        finally:
+            rnd._write_svg = real_write_svg
+            if had_own:
+                mod._write_svg = real_write_svg
+
+    # ── 7. Report ──────────────────────────────────────────────────────────────
     print()
     print("=" * 60)
     print(f"  Seam allowance test suite")
-    print(f"  Cases:  {len(TEST_CASES)} bodice + {len(SLEEVE_CASES)} sleeve")
+    print(f"  Cases:  {len(TEST_CASES)} bodice + {len(SLEEVE_CASES)} sleeve"
+          f" + {len(index['patterns'])} pattern sweep")
     print(f"  SA values tested per case: {SEAM_ALLOWANCES}")
     print("=" * 60)
     print(f"  Total checks : {total}")

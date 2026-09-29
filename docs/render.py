@@ -247,32 +247,30 @@ def rectangle_dims(outline, seam_allowance, seam_allowance_fn=None,
     return dict(finished_w=finished_w, finished_h=finished_h, cut_w=cut_w, cut_h=cut_h)
 
 
-def _notch_dir(pt, outline_poly, centroid):
+def _notch_dir(pt, outline_poly, orientation):
     """Inward unit normal of the outline at (or nearest to) *pt*.
 
     Notches are cut perpendicular to the seam they sit on, so the direction
     comes from the local tangent of the nearest outline edge — not from the
     corner-bisector logic _inward_dir uses for text labels (a notch may sit
-    mid-edge, where there is no corner to bisect).
+    mid-edge, where there is no corner to bisect).  Which side is "in" comes
+    from the outline's winding (*orientation*, see _outline_orientation),
+    since outline_poly is traversed in outline order.
     """
     pt = np.asarray(pt, float)
-    centroid = np.asarray(centroid, float)
     n = len(outline_poly)
-    best_d, best_i = None, 0
+    best_d, best_i = None, None
     for i in range(n - 1):
+        if float(np.linalg.norm(outline_poly[i + 1] - outline_poly[i])) < 1e-12:
+            continue                      # zero-length edge has no tangent
         d = _seg_dist(pt, outline_poly[i], outline_poly[i + 1])
         if best_d is None or d < best_d:
             best_d, best_i = d, i
-    edge = outline_poly[best_i + 1] - outline_poly[best_i]
-    el = float(np.linalg.norm(edge))
-    if el < 1e-12:
-        v = centroid - pt
-        vl = float(np.linalg.norm(v))
-        return v / vl if vl > 1e-12 else np.array([1.0, 0.0])
-    nv = np.array([-edge[1] / el, edge[0] / el])
-    if float(np.dot(nv, centroid - pt)) < 0:
-        nv = -nv
-    return nv
+    if best_i is None:
+        return np.array([1.0, 0.0])
+    outward = _outward_normal(outline_poly[best_i + 1] - outline_poly[best_i],
+                              orientation)
+    return -outward
 
 
 def _curve_groups(segments):
@@ -318,19 +316,61 @@ def _curve_groups(segments):
     return groups
 
 
-def _offset_curve_samples(segments, distance, centroid, n_per_seg=40):
+def _outline_orientation(outline_poly):
+    """Winding direction of a closed model-space polygon (Nx2, y up):
+    +1.0 if it runs counter-clockwise, -1.0 if clockwise (shoelace sign).
+
+    This is what decides which side of an edge is *outside* the piece for
+    seam allowance and notches.  Every seam run, curve group and the dense
+    outline sample is traversed in outline order, so the interior always
+    lies on the same side of the direction of travel (left for CCW, right
+    for CW) no matter where the edge sits — see _outward_normal.
+
+    (An earlier version chose the side by asking whether the candidate
+    normal moved the point toward the outline's centroid.  That only holds
+    for convex pieces: on the concave neck and armhole scoops of a bodice
+    the true outward normal frequently points *toward* the centroid — at
+    the underarm, and along the neckline next to the centre-front fold —
+    so the allowance was drawn inside the garment.)
+    """
+    poly = np.asarray(outline_poly, float)
+    if len(poly) < 3:
+        return 1.0
+    x, y = poly[:, 0], poly[:, 1]
+    area2 = float(np.dot(x, np.roll(y, -1)) - np.dot(np.roll(x, -1), y))
+    return 1.0 if area2 >= 0 else -1.0
+
+
+def _outward_normal(tangent, orientation):
+    """Unit normal on the exterior side of *tangent*, where the tangent is
+    the direction of travel along the outline in outline order and
+    *orientation* is the outline's winding from _outline_orientation.
+    Returns None for a zero-length tangent.
+    """
+    orientation = float(orientation)     # a scalar ±1, never a point
+    tl = float(np.linalg.norm(tangent))
+    if tl < 1e-12:
+        return None
+    tx, ty = float(tangent[0]) / tl, float(tangent[1]) / tl
+    # CCW (+1): interior on the left, so outward is the right-hand normal
+    # (ty, -tx).  CW (-1): interior on the right, so outward is (-ty, tx).
+    return orientation * np.array([ty, -tx])
+
+
+def _offset_curve_samples(segments, distance, orientation, n_per_seg=40):
     """Outward parallel offset of a chain of quadratic/cubic_curve segments.
 
     Samples each curve segment densely, computes the outward-pointing unit
     normal at every sample via central finite differences, then offsets each
     point by *distance* along that normal (like Illustrator's "offset path").
+    *orientation* is the outline's winding (see _outline_orientation); the
+    segments must be in outline order so the normal lands on the outside.
 
     Returns an np.array of offset points suitable for rendering as a polyline.
     Segments should be geometrically adjacent (each starting where the last
     ended) — see _curve_groups. Only "quadratic"/"cubic_curve" segments are
     sampled; others are skipped.
     """
-    centroid = np.asarray(centroid, float)
     raw_pts = []
     for seg in segments:
         if seg[0] == "cubic_curve":
@@ -364,65 +404,42 @@ def _offset_curve_samples(segments, distance, centroid, n_per_seg=40):
             tang = pts[-1] - pts[-2]
         else:
             tang = pts[i + 1] - pts[i - 1]
-        tl = np.linalg.norm(tang)
-        if tl < 1e-12:
-            normals[i] = np.array([0.0, 1.0])
-            continue
-        tang /= tl
-        # 90° CCW rotation → candidate outward normal
-        nv = np.array([-tang[1], tang[0]])
-        # Flip if it points inward (toward centroid)
-        mid = pts[i]
-        if np.linalg.norm(mid + nv - centroid) < np.linalg.norm(mid - centroid):
-            nv = -nv
+        nv = _outward_normal(tang, orientation)
+        if nv is None:                      # coincident samples: reuse the
+            nv = normals[i - 1] if i > 0 else np.array([0.0, 0.0])   # last normal
         normals[i] = nv
 
     return pts + normals * distance
 
 
-def _offset_open_polyline(pts, distance, centroid):
-    """Outward parallel offset of an open polyline.
+def _offset_open_polyline(pts, distance, orientation):
+    """Outward parallel offset of an open polyline given in outline order.
 
     Interior vertices use a miter bisector (capped at MITER_LIMIT).
     Endpoint vertices use the perpendicular of their single adjacent edge.
+    *orientation* is the outline's winding (see _outline_orientation).
     Returns an np.array of offset points, same count as *pts*.
     """
-    centroid = np.asarray(centroid, float)
+    pts = np.asarray(pts, float)
     n = len(pts)
     MITER_LIMIT = 4.0
-
-    def _out_normal(ev, le, mid):
-        nv = np.array([-ev[1] / le, ev[0] / le])
-        if np.linalg.norm(mid + nv - centroid) < np.linalg.norm(mid - centroid):
-            nv = -nv
-        return nv
 
     offset = []
     for i in range(n):
         p = pts[i]
-        if i == 0:
-            e = pts[1] - pts[0]; le = np.linalg.norm(e)
-            offset.append(p + _out_normal(e, le, (pts[0]+pts[1])/2) * distance
-                          if le > 1e-8 else p.copy())
-        elif i == n - 1:
-            e = pts[-1] - pts[-2]; le = np.linalg.norm(e)
-            offset.append(p + _out_normal(e, le, (pts[-2]+pts[-1])/2) * distance
-                          if le > 1e-8 else p.copy())
+        ni = _outward_normal(pts[i] - pts[i - 1], orientation) if i > 0     else None
+        no = _outward_normal(pts[i + 1] - pts[i], orientation) if i < n - 1 else None
+        if ni is None and no is None:          # isolated / degenerate vertex
+            offset.append(p.copy())
+        elif ni is None or no is None:         # endpoint (or one zero edge)
+            offset.append(p + (no if ni is None else ni) * distance)
         else:
-            e_in = pts[i] - pts[i-1]; li = np.linalg.norm(e_in)
-            e_out = pts[i+1] - pts[i]; lo = np.linalg.norm(e_out)
-            if li < 1e-8 or lo < 1e-8:
-                v = p - centroid; vl = np.linalg.norm(v)
-                offset.append(p + (v/vl if vl > 1e-8 else np.array([1.,0.])) * distance)
-                continue
-            ni = _out_normal(e_in,  li, (pts[i-1]+pts[i])/2)
-            no = _out_normal(e_out, lo, (pts[i]+pts[i+1])/2)
-            bis = ni + no; bl = np.linalg.norm(bis)
-            if bl < 1e-8:
+            bis = ni + no; bl = float(np.linalg.norm(bis))
+            if bl < 1e-8:                      # 180° reversal: no miter
                 offset.append(p + ni * distance)
                 continue
             bis /= bl
-            sin_h = max(np.dot(bis, ni), 1.0 / MITER_LIMIT)
+            sin_h = max(float(np.dot(bis, ni)), 1.0 / MITER_LIMIT)
             offset.append(p + bis * (distance / sin_h))
     return np.array(offset)
 
@@ -571,7 +588,8 @@ def _outline_stroke_paths(segments, convert):
 
 
 def _sample_outline(segments, n=80):
-    """Dense point sample — used to compute the centroid."""
+    """Dense point sample of the outline, in outline order — used for the
+    winding orientation, the label centroid, and point-in-polygon tests."""
     pts = []
     for idx, seg in enumerate(segments):
         if seg[0] in ("line", "dart"):
@@ -706,13 +724,15 @@ def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
     # should get this automatic, position-based exclusion.
     # merge_consecutive=False keeps adjacent straight edges as separate runs
     # so seam_allowance_fn can assign them different allowances.
+    # Which side of an edge is "outside" comes from the outline's winding
+    # direction (see _outline_orientation), never from the centroid.
     outline_poly  = _sample_outline(outline)          # dense Nx2, reused below
-    centroid_temp = outline_poly.mean(axis=0)
+    orientation   = _outline_orientation(outline_poly)
     seam_offset_runs = []   # list of np.array (model-space offset polyline per run)
     for run, sa in _seam_runs_no_waist(outline, seam_allowance, seam_allowance_fn,
                                         waist_detect=waist_detect,
                                         merge_consecutive=merge_consecutive):
-        seam_offset_runs.append(_offset_open_polyline(run, sa, centroid_temp))
+        seam_offset_runs.append(_offset_open_polyline(run, sa, orientation))
 
     # Curve-based seam allowance (sleeve cap, armhole, crotch curve, etc.)
     # curve_seam_segments is a list of GROUPS — each group a list of
@@ -722,7 +742,7 @@ def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
     curve_offset_runs = []
     if curve_seam_segments and curve_seam_allowance and curve_seam_allowance > 1e-6:
         for group in curve_seam_segments:
-            curve_off = _offset_curve_samples(group, curve_seam_allowance, centroid_temp)
+            curve_off = _offset_curve_samples(group, curve_seam_allowance, orientation)
             if len(curve_off) > 1:
                 curve_offset_runs.append(curve_off)
 
@@ -822,7 +842,7 @@ def _write_svg(path, outline, construction_lines, dart_lines, fill, stroke,
     # up when sewing.
     NOTCH_IN = 0.25   # inches
     for pt in (notches or []):
-        d = _notch_dir(pt, outline_poly, centroid_model)
+        d = _notch_dir(pt, outline_poly, orientation)
         x0, y0 = convert(np.asarray(pt, float))[0]
         x1, y1 = convert(np.asarray(pt, float) + d * NOTCH_IN)[0]
         lines.append(
